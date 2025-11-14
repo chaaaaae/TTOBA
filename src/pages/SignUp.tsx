@@ -3,13 +3,10 @@ import { Link } from 'react-router-dom'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
-    userType: 'individual',
     name: '',
     email: '',
     password: '',
     passwordConfirm: '',
-    organizationName: '',
-    organizationCode: '',
     agreeTerms: false,
     agreePrivacy: false,
     agreeMarketing: false
@@ -20,13 +17,6 @@ export default function SignUp() {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
-    }))
-  }
-
-  const handleUserTypeChange = (type: 'individual' | 'organization') => {
-    setFormData(prev => ({
-      ...prev,
-      userType: type
     }))
   }
 
@@ -50,7 +40,7 @@ export default function SignUp() {
     }
 
     // 회원가입 처리
-    alert(`회원가입 성공!\n유형: ${formData.userType === 'individual' ? '개인' : '기관'}`)
+    alert('회원가입 성공!')
     // 실제로는 여기서 API 호출 후 대시보드로 이동
     // navigate('/dashboard')
   }
@@ -187,59 +177,6 @@ export default function SignUp() {
             </p>
           </div>
 
-          {/* User Type Toggle */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '1rem',
-            marginBottom: '2rem'
-          }}>
-            <button
-              type="button"
-              onClick={() => handleUserTypeChange('individual')}
-              style={{
-                padding: '1rem',
-                borderRadius: '12px',
-                border: formData.userType === 'individual' 
-                  ? '2px solid var(--primary-blue)' 
-                  : '2px solid rgba(31, 60, 136, 0.1)',
-                background: formData.userType === 'individual' 
-                  ? 'rgba(31, 60, 136, 0.05)' 
-                  : 'transparent',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                fontWeight: '600',
-                color: formData.userType === 'individual' 
-                  ? 'var(--primary-blue)' 
-                  : 'var(--text-secondary)'
-              }}
-            >
-              👤 개인
-            </button>
-            <button
-              type="button"
-              onClick={() => handleUserTypeChange('organization')}
-              style={{
-                padding: '1rem',
-                borderRadius: '12px',
-                border: formData.userType === 'organization' 
-                  ? '2px solid var(--primary-blue)' 
-                  : '2px solid rgba(31, 60, 136, 0.1)',
-                background: formData.userType === 'organization' 
-                  ? 'rgba(31, 60, 136, 0.05)' 
-                  : 'transparent',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                fontWeight: '600',
-                color: formData.userType === 'organization' 
-                  ? 'var(--primary-blue)' 
-                  : 'var(--text-secondary)'
-              }}
-            >
-              🏢 기관
-            </button>
-          </div>
-
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Name */}
@@ -353,65 +290,6 @@ export default function SignUp() {
                 }}
               />
             </div>
-
-            {/* Organization Fields (조건부) */}
-            {formData.userType === 'organization' && (
-              <>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    fontWeight: '600',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.9rem'
-                  }}>
-                    기관명
-                  </label>
-                  <input
-                    type="text"
-                    name="organizationName"
-                    value={formData.organizationName}
-                    onChange={handleInputChange}
-                    placeholder="기관명을 입력하세요"
-                    style={{
-                      width: '100%',
-                      padding: '0.875rem 1rem',
-                      border: '2px solid rgba(31, 60, 136, 0.1)',
-                      borderRadius: '10px',
-                      fontSize: '1rem',
-                      transition: 'all 0.3s'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    fontWeight: '600',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.9rem'
-                  }}>
-                    기관 코드
-                  </label>
-                  <input
-                    type="text"
-                    name="organizationCode"
-                    value={formData.organizationCode}
-                    onChange={handleInputChange}
-                    placeholder="관리자에게 받은 코드를 입력하세요"
-                    style={{
-                      width: '100%',
-                      padding: '0.875rem 1rem',
-                      border: '2px solid rgba(31, 60, 136, 0.1)',
-                      borderRadius: '10px',
-                      fontSize: '1rem',
-                      transition: 'all 0.3s'
-                    }}
-                  />
-                </div>
-              </>
-            )}
 
             {/* Agreements */}
             <div style={{
