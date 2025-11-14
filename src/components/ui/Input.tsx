@@ -1,4 +1,4 @@
-import { CSSProperties, ChangeEvent } from 'react'
+import type { CSSProperties, ChangeEvent } from 'react'
 
 interface InputProps {
   type?: 'text' | 'email' | 'password' | 'number' | 'search'

@@ -1,5 +1,3 @@
-import { CSSProperties } from 'react'
-
 interface StatsCardProps {
   icon: string
   label: string
