@@ -1,3 +1,4 @@
+// src\pages\QuestionBank.tsx
 import { useState } from 'react'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import QuestionCard from '../components/question-bank/QuestionCard'

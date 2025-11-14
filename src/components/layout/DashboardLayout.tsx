@@ -1,4 +1,5 @@
-import { ReactNode } from 'react'
+// src\components\layout\DashboardLayout.tsx
+import type { ReactNode } from 'react'
 import TopNav from './TopNav'
 import Sidebar from './Sidebar'
 

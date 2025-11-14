@@ -1,3 +1,4 @@
+// src\components\ui\Card.tsx
 import type { ReactNode, CSSProperties } from 'react'
 
 interface CardProps {

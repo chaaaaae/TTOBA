@@ -1,3 +1,4 @@
+// src\pages\Dashboard.tsx
 import DashboardLayout from '../components/layout/DashboardLayout'
 import StatsCard from '../components/dashboard/StatsCard'
 import RecentInterviewCard from '../components/dashboard/RecentInterviewCard'

@@ -1,3 +1,4 @@
+// src\components\ui\ProgressBar.tsx
 import type { CSSProperties } from 'react'
 
 interface ProgressBarProps {

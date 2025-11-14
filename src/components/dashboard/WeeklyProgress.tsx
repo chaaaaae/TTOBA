@@ -1,3 +1,4 @@
+// src\components\dashboard\WeeklyProgress.tsx
 interface WeeklyProgressProps {
     data: Array<{
       day: string

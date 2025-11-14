@@ -1,3 +1,4 @@
+// src\components\question-bank\QuestionCard.tsx
 import Badge from '../ui/Badge'
 
 interface QuestionCardProps {

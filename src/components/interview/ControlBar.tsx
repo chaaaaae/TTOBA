@@ -1,3 +1,4 @@
+// src\components\interview\ControlBar.tsx
 interface ControlBarProps {
     isRecording: boolean
     onToggleRecording: () => void

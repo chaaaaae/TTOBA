@@ -1,3 +1,4 @@
+// src\components\report\AnswerCard.tsx
 interface AnswerCardProps {
     questionNumber: number
     question: string

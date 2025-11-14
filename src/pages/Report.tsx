@@ -1,3 +1,4 @@
+// src\pages\Report.tsx
 import { useParams, useNavigate } from 'react-router-dom'
 import ScoreCard from '../components/report/ScoreCard'
 import InsightCard from '../components/report/InsightCard'

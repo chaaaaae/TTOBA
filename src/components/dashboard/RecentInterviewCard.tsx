@@ -1,3 +1,4 @@
+// src\components\dashboard\RecentInterviewCard.tsx
 interface RecentInterviewCardProps {
     title: string
     date: string

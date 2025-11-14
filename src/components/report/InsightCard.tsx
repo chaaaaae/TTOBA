@@ -1,3 +1,4 @@
+// src\components\report\InsightCard.tsx
 interface InsightCardProps {
     type: 'positive' | 'neutral' | 'negative'
     icon: string

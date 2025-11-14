@@ -1,3 +1,4 @@
+// src\pages\Index.tsx
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 

@@ -1,3 +1,4 @@
+// src\components\interview\ChatPanel.tsx
 import { useState } from 'react'
 import ChatMessage from './ChatMessage'
 

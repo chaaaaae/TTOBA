@@ -1,3 +1,4 @@
+// src\components\dashboard\StatsCard.tsx
 interface StatsCardProps {
   icon: string
   label: string

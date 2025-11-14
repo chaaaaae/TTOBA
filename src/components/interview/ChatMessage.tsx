@@ -1,3 +1,4 @@
+// src\components\interview\ChatMessage.tsx
 interface Message {
     type: 'ai' | 'user'
     content: string

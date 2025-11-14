@@ -1,6 +1,5 @@
-/* ============================================
-   TypeScript Types - 데이터 구조 정의
-   ============================================ */
+// src\lib\types.ts
+//TypeScript Types - 데이터 구조 정의
 
 // 사용자 타입
 export type UserType = 'individual' | 'organization';

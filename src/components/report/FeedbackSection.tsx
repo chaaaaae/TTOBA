@@ -1,3 +1,4 @@
+// src\components\report\FeedbackSection.tsx
 interface FeedbackItem {
     type: 'strength' | 'improvement' | 'suggestion'
     icon: string

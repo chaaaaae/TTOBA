@@ -1,3 +1,4 @@
+// src\components\interview\InterviewHUD.tsx
 interface InterviewHUDProps {
     isRecording: boolean
     elapsedTime: number

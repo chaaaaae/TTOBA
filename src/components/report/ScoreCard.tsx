@@ -1,3 +1,4 @@
+// src\components\report\ScoreCard.tsx
 interface ScoreCardProps {
     label: string
     score: number

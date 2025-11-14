@@ -1,3 +1,4 @@
+// src\components\interview\CameraView.tsx
 interface CameraViewProps {
     isRecording: boolean
     stats?: {

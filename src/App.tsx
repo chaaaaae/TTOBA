@@ -1,3 +1,4 @@
+// src\App.tsx
 import { Routes, Route } from 'react-router-dom'
 import Index from './pages/Index'
 import SignUp from './pages/SignUp'
