@@ -1,5 +1,6 @@
-// src\components\interview\ChatPanel.tsx
-import { useState } from 'react'
+// src/components/interview/ChatPanel.tsx
+import { useState, useEffect } from 'react'
+import type React from 'react'
 import ChatMessage from './ChatMessage'
 
 interface Message {
@@ -8,16 +9,26 @@ interface Message {
   timestamp: Date
 }
 
+// 🔥 STT 상태 타입
+type SttState = 'idle' | 'starting' | 'recording' | 'transcribing'
+
 interface ChatPanelProps {
   messages: Message[]
   onSendMessage: (message: string) => void
   disabled?: boolean
+  // 🔽 음성 인식용 추가 props
+  onVoiceClick?: () => void          // 버튼 눌렀을 때 호출
+  voiceText?: string                 // 인식 결과 텍스트
+  sttState?: SttState                // STT 상태
 }
 
 export default function ChatPanel({
   messages,
   onSendMessage,
-  disabled = false
+  disabled = false,
+  onVoiceClick,
+  voiceText,
+  sttState = 'idle'
 }: ChatPanelProps) {
   const [inputMessage, setInputMessage] = useState('')
 
@@ -34,6 +45,33 @@ export default function ChatPanel({
       handleSend()
     }
   }
+
+  // 🔥 STT 결과가 들어오면 입력창에 채워 넣기
+  useEffect(() => {
+    if (voiceText && !disabled) {
+      setInputMessage((prev) => (prev ? `${prev} ${voiceText}` : voiceText))
+    }
+  }, [voiceText, disabled])
+
+  // 🔥 STT 상태에 따른 버튼 텍스트
+  const getVoiceButtonLabel = () => {
+    if (disabled) return '🎤 음성으로 답변하기'
+
+    switch (sttState) {
+      case 'starting':
+        return '⏳ 준비 중...'
+      case 'recording':
+        return '🛑 음성 답변 중지'
+      case 'transcribing':
+        return '🔄 음성 인식 중...'
+      case 'idle':
+      default:
+        return '🎤 음성으로 답변하기'
+    }
+  }
+
+  const isVoiceButtonDisabled =
+    disabled || sttState === 'starting' || sttState === 'transcribing'
 
   return (
     <div
@@ -66,7 +104,8 @@ export default function ChatPanel({
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--primary-bright), var(--accent-mint))',
+              background:
+                'linear-gradient(135deg, var(--primary-bright), var(--accent-mint))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -200,7 +239,8 @@ export default function ChatPanel({
         </div>
 
         <button
-          disabled={disabled}
+          disabled={isVoiceButtonDisabled}
+          onClick={onVoiceClick}
           style={{
             width: '100%',
             padding: '1rem',
@@ -212,7 +252,7 @@ export default function ChatPanel({
               ? '2px solid #E5E7EB'
               : '2px solid rgba(44, 77, 247, 0.2)',
             borderRadius: '10px',
-            cursor: disabled ? 'not-allowed' : 'pointer',
+            cursor: isVoiceButtonDisabled ? 'not-allowed' : 'pointer',
             fontWeight: '600',
             fontSize: '0.95rem',
             display: 'flex',
@@ -222,7 +262,7 @@ export default function ChatPanel({
             transition: 'all 0.3s'
           }}
         >
-          🎤 음성으로 답변하기
+          {getVoiceButtonLabel()}
         </button>
       </div>
 

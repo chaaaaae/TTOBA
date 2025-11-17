@@ -1,10 +1,13 @@
-// src\pages\Interview.tsx
+// src/pages/Interview.tsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import InterviewHUD from '../components/interview/InterviewHUD'
 import CameraView from '../components/interview/CameraView'
 import ChatPanel from '../components/interview/ChatPanel'
 import ControlBar from '../components/interview/ControlBar'
+
+// 🔥 STT 상태 타입
+type SttState = 'idle' | 'starting' | 'recording' | 'transcribing'
 
 export default function Interview() {
   const navigate = useNavigate()
@@ -30,6 +33,12 @@ export default function Interview() {
     }
   ])
 
+  // 🎤 STT 관련 상태
+  const [voiceText, setVoiceText] = useState('')          // 인식 결과 텍스트
+  const [sttState, setSttState] = useState<SttState>('idle') // STT 상태 관리
+
+  const isVoiceRecording = sttState === 'recording'
+
   // Timer
   useEffect(() => {
     if (isRecording) {
@@ -44,7 +53,7 @@ export default function Interview() {
     setMessages((prev) => [
       ...prev,
       {
-        type: 'user',
+        type: 'user' as const,
         content: message,
         timestamp: new Date()
       }
@@ -55,7 +64,7 @@ export default function Interview() {
       setMessages((prev) => [
         ...prev,
         {
-          type: 'ai',
+          type: 'ai' as const,
           content: '좋은 답변입니다. 다음 질문으로 넘어가겠습니다.',
           timestamp: new Date()
         }
@@ -67,6 +76,64 @@ export default function Interview() {
   const handleEndInterview = () => {
     if (window.confirm('면접을 종료하시겠습니까?')) {
       navigate('/report/1')
+    }
+  }
+
+  // 🎤 "음성으로 답변하기 / 음성 답변 중지" 버튼 클릭 핸들러
+  const handleVoiceClick = async () => {
+    try {
+      // 🔵 idle -> starting -> recording
+      if (sttState === 'idle') {
+        setVoiceText('') // 이전 인식 결과 초기화 (선택)
+        setSttState('starting')
+
+        // 백엔드 호출 + 최소 1초 대기 동시 진행
+        const startRequest = fetch('http://localhost:8000/stt/start', {
+          method: 'POST'
+        })
+        const delay = new Promise((resolve) => setTimeout(resolve, 1000))
+
+        const [res] = await Promise.all([startRequest, delay])
+
+        if (!res.ok) {
+          throw new Error('녹음 시작 실패')
+        }
+
+        // 이제 사용자에게 "말해도 된다" 느낌의 상태
+        setSttState('recording')
+      }
+      // 🔴 recording -> transcribing -> idle
+      else if (sttState === 'recording') {
+        setSttState('transcribing')
+
+        const res = await fetch('http://localhost:8000/stt/stop', {
+          method: 'POST'
+        })
+
+        if (!res.ok) {
+          throw new Error('녹음/인식 실패')
+        }
+
+        const data = await res.json()
+        console.log('STT result:', data)
+
+        if (data.text) {
+          // ChatPanel의 입력창에 들어가도록 상태에 저장
+          setVoiceText(data.text)
+        } else {
+          alert('인식된 문장이 없습니다.')
+        }
+
+        setSttState('idle')
+      }
+      // starting / transcribing 상태에서는 클릭 무시
+      else {
+        return
+      }
+    } catch (err) {
+      console.error(err)
+      alert('음성 인식 중 오류가 발생했습니다.')
+      setSttState('idle')
     }
   }
 
@@ -118,10 +185,32 @@ export default function Interview() {
           onToggleRecording={() => setIsRecording(!isRecording)}
           onEndInterview={handleEndInterview}
         />
+
+        {/* (선택) 음성 녹음 상태 표시 */}
+        {(sttState === 'starting' || sttState === 'recording') && (
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              color: 'white',
+              fontSize: '0.9rem'
+            }}
+          >
+            {sttState === 'starting'
+              ? '⏳ 마이크 준비 중입니다...'
+              : '🎙 음성 답변 녹음 중...'}
+          </div>
+        )}
       </div>
 
       {/* Right Side - Chat Panel */}
-      <ChatPanel messages={messages} onSendMessage={handleSendMessage} />
+      <ChatPanel
+        messages={messages}
+        onSendMessage={handleSendMessage}
+        disabled={false}
+        onVoiceClick={handleVoiceClick}
+        voiceText={voiceText}
+        sttState={sttState}
+      />
     </div>
   )
 }
