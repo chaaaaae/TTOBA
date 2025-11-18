@@ -1,13 +1,18 @@
-// src\pages\Report.tsx
+// src/pages/Report.tsx
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ScoreCard from '../components/report/ScoreCard'
 import InsightCard from '../components/report/InsightCard'
 import AnswerCard from '../components/report/AnswerCard'
 import FeedbackSection from '../components/report/FeedbackSection'
+import RightDrawer from '../components/report/RightDrawer'
 
 export default function Report() {
   const { id } = useParams()
   const navigate = useNavigate()
+
+  // 어떤 질문의 상세피드백을 보고 있는지 (인덱스)
+  const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null)
 
   const insights = [
     {
@@ -288,7 +293,8 @@ export default function Report() {
                   <AnswerCard
                     key={idx}
                     {...answer}
-                    onViewFeedback={() => alert('상세 피드백 보기')}
+                    // 🔽 여기서 상세 피드백 버튼 → 오른쪽 패널 열기
+                    onViewFeedback={() => setOpenQuestionIndex(idx)}
                   />
                 ))}
               </div>
@@ -333,6 +339,39 @@ export default function Report() {
           </div>
         </div>
       </div>
+
+      {/* 🔽 오른쪽 흰 패널 (지금은 내용 비워둠) */}
+      <RightDrawer
+        isOpen={openQuestionIndex !== null}
+        onClose={() => setOpenQuestionIndex(null)}
+      >
+        {/* 여기부터 패널 안 내용 (대충 예쁜 틀만) */}
+        <div className="flex h-full flex-col">
+          {/* 상단 헤더 */}
+          <div className="flex items-center justify-between border-b px-6 py-4">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-slate-400">
+                상세 피드백
+              </span>
+              <span className="text-sm font-semibold text-slate-900">
+                Q{openQuestionIndex !== null ? answers[openQuestionIndex].questionNumber : ''}
+              </span>
+            </div>
+            <button
+              onClick={() => setOpenQuestionIndex(null)}
+              className="text-sm text-slate-400 hover:text-slate-700"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* 내용 영역 (지금은 빈 상태여도 OK) */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {/* 나중에 여기다가 실제 상세 결과 넣으면 됨 */}
+          </div>
+        </div>
+      </RightDrawer>
+
     </div>
   )
 }

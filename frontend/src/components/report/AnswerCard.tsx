@@ -81,6 +81,7 @@ interface AnswerCardProps {
             ⏱️ {duration}
           </span>
           <button
+            data-feedback-trigger
             onClick={onViewFeedback}
             style={{
               padding: '0.5rem 1rem',
