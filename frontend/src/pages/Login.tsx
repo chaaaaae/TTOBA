@@ -111,7 +111,7 @@ export default function Login() {
               marginBottom: '3rem',
               lineHeight: '1.7'
             }}>
-              계속해서 면접 실력을 향상시키고<br />
+              계속해서 면접 실력을 향상시키고 <br />
               목표를 달성해 나가세요
             </p>
 
@@ -298,92 +298,6 @@ export default function Login() {
             >
               로그인
             </button>
-
-            {/* Divider */}
-            <div style={{ position: 'relative', textAlign: 'center', margin: '1rem 0' }}>
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: 0,
-                right: 0,
-                height: '1px',
-                background: 'rgba(31, 60, 136, 0.1)'
-              }} />
-              <span style={{
-                position: 'relative',
-                background: 'white',
-                padding: '0 1rem',
-                color: 'var(--text-secondary)',
-                fontSize: '0.9rem'
-              }}>
-                또는
-              </span>
-            </div>
-
-            {/* Social Login Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button
-                type="button"
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '10px',
-                  border: '2px solid rgba(31, 60, 136, 0.1)',
-                  background: 'white',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.75rem'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--bg-light)'
-                  e.currentTarget.style.borderColor = 'rgba(31, 60, 136, 0.2)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white'
-                  e.currentTarget.style.borderColor = 'rgba(31, 60, 136, 0.1)'
-                }}
-              >
-                <span style={{ fontSize: '1.2rem' }}>🔍</span>
-                Google로 계속하기
-              </button>
-
-              <button
-                type="button"
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '10px',
-                  border: '2px solid rgba(31, 60, 136, 0.1)',
-                  background: 'white',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.75rem'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--bg-light)'
-                  e.currentTarget.style.borderColor = 'rgba(31, 60, 136, 0.2)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white'
-                  e.currentTarget.style.borderColor = 'rgba(31, 60, 136, 0.1)'
-                }}
-              >
-                <span style={{ fontSize: '1.2rem' }}>💬</span>
-                카카오로 계속하기
-              </button>
-            </div>
 
             {/* Sign Up Link */}
             <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.5rem' }}>
