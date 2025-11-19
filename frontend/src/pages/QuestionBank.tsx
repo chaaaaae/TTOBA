@@ -1,75 +1,27 @@
-// src\pages\QuestionBank.tsx
-import { useState } from 'react'
+// src/pages/QuestionBank.tsx
+import { useEffect, useMemo, useState } from 'react'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import QuestionCard from '../components/question-bank/QuestionCard'
 import PracticeSetCard from '../components/question-bank/PracticeSetCard'
 import CategoryFilter from '../components/question-bank/CategoryFilter'
 import SearchBar from '../components/question-bank/SearchBar'
 
+import {
+  ALL_QUESTIONS,
+  CATEGORIES_WITH_COUNT,
+  CATEGORY_LABEL_MAP,
+  type QuestionCategoryId
+} from '../data/questionBank'
+
+const PAGE_SIZE = 20
+
 export default function QuestionBank() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedCategory, setSelectedCategory] =
+    useState<'all' | QuestionCategoryId>('all')
+  const [currentPage, setCurrentPage] = useState(1)
 
-  const categories = [
-    { id: 'all', name: '전체', count: 156 },
-    { id: 'introduce', name: '자기소개', count: 28 },
-    { id: 'motivation', name: '지원동기', count: 32 },
-    { id: 'strength', name: '강점/약점', count: 24 },
-    { id: 'experience', name: '경험', count: 36 },
-    { id: 'technical', name: '기술면접', count: 36 }
-  ]
-
-  const questions = [
-    {
-      id: 1,
-      question: '간단하게 자기소개를 해주세요.',
-      category: '자기소개',
-      difficulty: 'easy' as const,
-      practiced: 12,
-      avgScore: 88
-    },
-    {
-      id: 2,
-      question: '우리 회사에 지원한 이유는 무엇인가요?',
-      category: '지원동기',
-      difficulty: 'medium' as const,
-      practiced: 8,
-      avgScore: 85
-    },
-    {
-      id: 3,
-      question: '본인의 가장 큰 강점과 약점은 무엇인가요?',
-      category: '강점/약점',
-      difficulty: 'medium' as const,
-      practiced: 15,
-      avgScore: 82
-    },
-    {
-      id: 4,
-      question: '팀 프로젝트에서 갈등이 생겼을 때 어떻게 해결했나요?',
-      category: '경험',
-      difficulty: 'hard' as const,
-      practiced: 5,
-      avgScore: 78
-    },
-    {
-      id: 5,
-      question: 'React의 생명주기에 대해 설명해주세요.',
-      category: '기술면접',
-      difficulty: 'hard' as const,
-      practiced: 3,
-      avgScore: 75
-    },
-    {
-      id: 6,
-      question: '5년 후 자신의 모습은 어떨 것 같나요?',
-      category: '지원동기',
-      difficulty: 'medium' as const,
-      practiced: 10,
-      avgScore: 86
-    }
-  ]
-
+  // 추천 세트는 일단 기존 더미 그대로 사용
   const practiceSets = [
     {
       title: '신입 개발자 필수',
@@ -97,6 +49,40 @@ export default function QuestionBank() {
   const handleSearch = () => {
     console.log('검색:', searchQuery)
     // 실제로는 여기서 검색 API 호출
+  }
+
+  // 🔎 검색 + 카테고리 필터 적용된 전체 질문 리스트
+  const filteredQuestions = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase()
+
+    return ALL_QUESTIONS.filter((q) => {
+      const matchCategory =
+        selectedCategory === 'all' || q.categoryId === selectedCategory
+
+      const matchSearch =
+        keyword === '' || q.text.toLowerCase().includes(keyword)
+
+      return matchCategory && matchSearch
+    })
+  }, [searchQuery, selectedCategory])
+
+  // 🔄 검색어나 카테고리가 바뀌면 페이지를 1페이지로 초기화
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedCategory])
+
+  // 📄 페이지네이션 계산
+  const totalPages = Math.max(1, Math.ceil(filteredQuestions.length / PAGE_SIZE))
+
+  const paginatedQuestions = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE
+    const endIndex = startIndex + PAGE_SIZE
+    return filteredQuestions.slice(startIndex, endIndex)
+  }, [filteredQuestions, currentPage])
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return
+    setCurrentPage(page)
   }
 
   return (
@@ -128,10 +114,10 @@ export default function QuestionBank() {
         }}
       >
         {[
-          { icon: '📝', label: '전체 질문', value: '156개' },
-          { icon: '✅', label: '연습 완료', value: '53개' },
-          { icon: '⭐', label: '평균 점수', value: '84점' },
-          { icon: '🔥', label: '연속 기록', value: '7일' }
+          { icon: '📝', label: '전체 질문', value: `${ALL_QUESTIONS.length}개` },
+          { icon: '✅', label: '연습 완료', value: '53개' }, // 더미
+          { icon: '⭐', label: '평균 점수', value: '84점' }, // 더미
+          { icon: '🔥', label: '연속 기록', value: '7일' } // 더미
         ].map((stat, idx) => (
           <div
             key={idx}
@@ -150,7 +136,8 @@ export default function QuestionBank() {
               style={{
                 width: '45px',
                 height: '45px',
-                background: 'linear-gradient(135deg, var(--primary-bright), var(--accent-mint))',
+                background:
+                  'linear-gradient(135deg, var(--primary-bright), var(--accent-mint))',
                 borderRadius: '12px',
                 display: 'flex',
                 alignItems: 'center',
@@ -170,7 +157,9 @@ export default function QuestionBank() {
               >
                 {stat.value}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <div
+                style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+              >
                 {stat.label}
               </div>
             </div>
@@ -201,9 +190,9 @@ export default function QuestionBank() {
 
         {/* Category Filter */}
         <CategoryFilter
-          categories={categories}
+          categories={CATEGORIES_WITH_COUNT}
           selected={selectedCategory}
-          onChange={setSelectedCategory}
+          onChange={(id) => setSelectedCategory(id as 'all' | QuestionCategoryId)}
         />
       </div>
 
@@ -251,15 +240,93 @@ export default function QuestionBank() {
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {questions.map((q) => (
+          {paginatedQuestions.map((q) => (
             <QuestionCard
               key={q.id}
-              {...q}
-              onPractice={() => alert(`${q.question} 연습 시작!`)}
-              onViewDetails={() => alert(`${q.question} 상세보기`)}
+              question={q.text}
+              category={CATEGORY_LABEL_MAP[q.categoryId]}
+              difficulty={q.difficulty}
+              practiced={q.practiced}
+              avgScore={q.avgScore}
+              onPractice={() => alert(`${q.text} 연습 시작!`)}
+              onViewDetails={() => alert(`${q.text} 상세보기`)}
             />
           ))}
+
+          {filteredQuestions.length === 0 && (
+            <div
+              style={{
+                padding: '2rem',
+                textAlign: 'center',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              조건에 맞는 질문이 없습니다.
+            </div>
+          )}
         </div>
+
+        {/* Pagination */}
+        {filteredQuestions.length > 0 && (
+          <div
+            style={{
+              marginTop: '2rem',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: '0.5rem 0.9rem',
+                borderRadius: '8px',
+                border: '1px solid var(--primary-blue)',
+                background: currentPage === 1 ? '#f3f4f6' : 'white',
+                color:
+                  currentPage === 1
+                    ? 'var(--text-secondary)'
+                    : 'var(--primary-blue)',
+                cursor: currentPage === 1 ? 'default' : 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 600
+              }}
+            >
+              이전
+            </button>
+
+            <span
+              style={{
+                fontSize: '0.9rem',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              {currentPage} / {totalPages} 페이지
+            </span>
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '0.5rem 0.9rem',
+                borderRadius: '8px',
+                border: '1px solid var(--primary-blue)',
+                background: currentPage === totalPages ? '#f3f4f6' : 'white',
+                color:
+                  currentPage === totalPages
+                    ? 'var(--text-secondary)'
+                    : 'var(--primary-blue)',
+                cursor: currentPage === totalPages ? 'default' : 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 600
+              }}
+            >
+              다음
+            </button>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

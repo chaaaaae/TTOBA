@@ -1,8 +1,7 @@
-// src\components\question-bank\QuestionCard.tsx
+// src/components/question-bank/QuestionCard.tsx
 import Badge from '../ui/Badge'
 
 interface QuestionCardProps {
-  id: number
   question: string
   category: string
   difficulty: 'easy' | 'medium' | 'hard'
@@ -54,7 +53,7 @@ export default function QuestionCard({
         transition: 'all 0.3s'
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, maxWidth: '80%' }}>
         <div
           style={{
             display: 'flex',
@@ -89,7 +88,9 @@ export default function QuestionCard({
           }}
         >
           <span>📝 {practiced}회 연습</span>
-          {avgScore && <span>⭐ 평균 {avgScore}점</span>}
+          {avgScore !== undefined && (
+            <span>⭐ 평균 {avgScore}점</span>
+          )}
         </div>
       </div>
 
