@@ -9,7 +9,6 @@ interface QuestionCardProps {
   practiced: number
   avgScore?: number
   onPractice: () => void
-  onViewDetails: () => void
 }
 
 export default function QuestionCard({
@@ -18,8 +17,7 @@ export default function QuestionCard({
   difficulty,
   practiced,
   avgScore,
-  onPractice,
-  onViewDetails
+  onPractice
 }: QuestionCardProps) {
   const getDifficultyColor = (diff: string) => {
     switch (diff) {
@@ -93,40 +91,22 @@ export default function QuestionCard({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button
-          onClick={onViewDetails}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: 'transparent',
-            color: 'var(--primary-blue)',
-            border: '2px solid var(--primary-blue)',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.9rem',
-            transition: 'all 0.3s'
-          }}
-        >
-          상세보기
-        </button>
-        <button
-          onClick={onPractice}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: 'linear-gradient(135deg, var(--primary-bright), var(--primary-blue))',
-            color: 'white',
-            border: 'none',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.9rem',
-            boxShadow: '0 4px 12px rgba(44, 77, 247, 0.2)'
-          }}
-        >
-          연습하기
-        </button>
-      </div>
+      <button
+        onClick={onPractice}
+        style={{
+          padding: '0.75rem 1.5rem',
+          background: 'linear-gradient(135deg, var(--primary-bright), var(--primary-blue))',
+          color: 'white',
+          border: 'none',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          fontWeight: '600',
+          fontSize: '0.9rem',
+          boxShadow: '0 4px 12px rgba(44, 77, 247, 0.2)'
+        }}
+      >
+        연습하기
+      </button>
     </div>
   )
 }
