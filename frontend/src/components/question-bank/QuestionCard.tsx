@@ -8,7 +8,6 @@ interface QuestionCardProps {
   practiced: number
   avgScore?: number
   onPractice: () => void
-  onViewDetails: () => void
 }
 
 export default function QuestionCard({
@@ -17,24 +16,31 @@ export default function QuestionCard({
   difficulty,
   practiced,
   avgScore,
-  onPractice,
-  onViewDetails
+  onPractice
 }: QuestionCardProps) {
   const getDifficultyColor = (diff: string) => {
     switch (diff) {
-      case 'easy': return 'success'
-      case 'medium': return 'warning'
-      case 'hard': return 'danger'
-      default: return 'info'
+      case 'easy':
+        return 'success'
+      case 'medium':
+        return 'warning'
+      case 'hard':
+        return 'danger'
+      default:
+        return 'info'
     }
   }
 
   const getDifficultyLabel = (diff: string) => {
     switch (diff) {
-      case 'easy': return '쉬움'
-      case 'medium': return '보통'
-      case 'hard': return '어려움'
-      default: return ''
+      case 'easy':
+        return '쉬움'
+      case 'medium':
+        return '보통'
+      case 'hard':
+        return '어려움'
+      default:
+        return ''
     }
   }
 
@@ -88,34 +94,17 @@ export default function QuestionCard({
           }}
         >
           <span>📝 {practiced}회 연습</span>
-          {avgScore !== undefined && (
-            <span>⭐ 평균 {avgScore}점</span>
-          )}
+          {avgScore !== undefined && <span>⭐ 평균 {avgScore}점</span>}
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: '1rem' }}>
         <button
-          onClick={onViewDetails}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: 'transparent',
-            color: 'var(--primary-blue)',
-            border: '2px solid var(--primary-blue)',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.9rem',
-            transition: 'all 0.3s'
-          }}
-        >
-          상세보기
-        </button>
-        <button
           onClick={onPractice}
           style={{
             padding: '0.75rem 1.5rem',
-            background: 'linear-gradient(135deg, var(--primary-bright), var(--primary-blue))',
+            background:
+              'linear-gradient(135deg, var(--primary-bright), var(--primary-blue))',
             color: 'white',
             border: 'none',
             borderRadius: '10px',
