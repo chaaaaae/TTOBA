@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import stt as stt_router
+from app.routers import answer_analysis_router
 
 app = FastAPI()
 
@@ -27,5 +28,6 @@ def ping():
     return {"message": "pong from backend"}
 
 
-# 🔥 stt 라우터 붙이기
+# 라우터 붙이기
 app.include_router(stt_router.router)
+app.include_router(answer_analysis_router.router)
