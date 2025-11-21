@@ -50,6 +50,9 @@ export default function Interview() {
   const [micEnabled, setMicEnabled] = useState(true)
   const [elapsedTime, setElapsedTime] = useState(0)
 
+  // ✅ 모든 질문이 끝났는지 여부
+  const [isFinished, setIsFinished] = useState(false)
+
   // 🔥 초기 메시지는 인사만
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -72,6 +75,17 @@ export default function Interview() {
       return () => clearInterval(interval)
     }
   }, [isRecording])
+
+  // ✅ 모든 질문 끝나면 자동으로 리포트 페이지로 이동
+  useEffect(() => {
+    if (isFinished) {
+      const timer = setTimeout(() => {
+        navigate('/report/1')
+      }, 2000) // "모든 질문이 종료되었습니다." 멘트 보여줄 시간 조금 줌
+
+      return () => clearTimeout(timer)
+    }
+  }, [isFinished, navigate])
 
   // 🔥 사용자가 텍스트로 답변 보냈을 때
   const handleSendMessage = (message: string) => {
@@ -154,6 +168,11 @@ export default function Interview() {
             }
           ]
         })
+
+        // ✅ 마지막 질문이면 인터뷰 종료 플래그 ON
+        if (isLastQuestion) {
+          setIsFinished(true)
+        }
 
         return nextIdx
       })

@@ -16,31 +16,24 @@ export interface QuestionSet {
 export const PRACTICE_SETS: QuestionSet[] = [
   {
     id: 'dev_beginner',
-    title: '신입 개발자 필수',
-    description: '신입 개발자가 꼭 준비해야 할 핵심 질문 모음',
+    title: '면접 벼락치기 필수 세트',
+    description: '시간 없어도 이것만은 준비하자!',
     difficulty: 'medium',
-    icon: '💻',
+    icon: '⚡',
 
     // 🔥 여러 카테고리에서 특정 질문 ID 직접 선택
     questions: [
-      'job_skill-1',
-      'job_skill-2',
-      'job_skill-5',
+      'self_intro-1',
+      'motivation-6',
+      'self_intro-34',
       'experience-3',
-      'experience-7',
-      'growth-1',
-      'growth-4',
       'problem_solving-2',
-      'problem_solving-3',
-      'culture_fit-1',
-      'culture_fit-2',
-      'company_fit-4',
-      'company_fit-6',
-      'situational-3',
-      'stress-1'
+      'experience-28',
+      'vision-38',
+      'self-intro-48'
     ],
 
-    count: 15
+    count: 8
   },
 
   {
