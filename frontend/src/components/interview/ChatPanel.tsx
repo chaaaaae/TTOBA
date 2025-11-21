@@ -1,5 +1,5 @@
 // src/components/interview/ChatPanel.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type React from 'react'
 import ChatMessage from './ChatMessage'
 
@@ -31,25 +31,56 @@ export default function ChatPanel({
   sttState = 'idle'
 }: ChatPanelProps) {
   const [inputMessage, setInputMessage] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // 메시지가 추가될 때마다 자동으로 스크롤을 맨 아래로
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages])
+
+  // textarea 높이 자동 조절
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`
+    }
+  }
 
   const handleSend = () => {
     if (inputMessage.trim() && !disabled) {
       onSendMessage(inputMessage.trim())
       setInputMessage('')
+      // 전송 후 높이 초기화
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto'
+        }
+      }, 0)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputMessage(e.target.value)
+    adjustTextareaHeight()
+  }
+
   // 🔥 STT 결과가 들어오면 입력창에 채워 넣기
   useEffect(() => {
     if (voiceText && !disabled) {
       setInputMessage((prev) => (prev ? `${prev} ${voiceText}` : voiceText))
+      // STT 결과로 텍스트가 추가되면 높이 조절
+      setTimeout(() => adjustTextareaHeight(), 0)
     }
   }, [voiceText, disabled])
 
@@ -158,11 +189,15 @@ export default function ChatPanel({
           flex: 1,
           padding: '1.5rem',
           overflowY: 'auto',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
-          background: 'var(--bg-light)'
+          background: 'var(--bg-light)',
+          scrollBehavior: 'smooth',
+          minHeight: 0 // flexbox 스크롤 버그 수정
         }}
+        className="chat-messages-container"
       >
         {messages.length === 0 ? (
           <div
@@ -180,7 +215,11 @@ export default function ChatPanel({
             <p>대화가 시작되면 여기에 표시됩니다</p>
           </div>
         ) : (
-          messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)
+          <>
+            {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)}
+            {/* 자동 스크롤을 위한 타겟 */}
+            <div ref={messagesEndRef} />
+          </>
         )}
       </div>
 
@@ -192,14 +231,15 @@ export default function ChatPanel({
           background: 'white'
         }}
       >
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
-          <input
-            type="text"
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'flex-end' }}>
+          <textarea
+            ref={textareaRef}
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder={disabled ? '면접이 종료되었습니다' : '답변을 입력하세요...'}
             disabled={disabled}
+            rows={1}
             style={{
               flex: 1,
               padding: '0.875rem 1rem',
@@ -209,7 +249,15 @@ export default function ChatPanel({
               transition: 'all 0.3s',
               outline: 'none',
               background: disabled ? '#F3F4F6' : 'white',
-              cursor: disabled ? 'not-allowed' : 'text'
+              cursor: disabled ? 'not-allowed' : 'text',
+              resize: 'none',
+              minHeight: '45px',
+              maxHeight: '150px',
+              overflowY: 'auto',
+              lineHeight: '1.5',
+              fontFamily: 'inherit',
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(31, 60, 136, 0.2) rgba(31, 60, 136, 0.05)'
             }}
           />
           <button
@@ -270,6 +318,51 @@ export default function ChatPanel({
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+
+        /* 커스텀 스크롤바 */
+        .chat-messages-container::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .chat-messages-container::-webkit-scrollbar-track {
+          background: rgba(31, 60, 136, 0.05);
+          border-radius: 10px;
+        }
+
+        .chat-messages-container::-webkit-scrollbar-thumb {
+          background: rgba(31, 60, 136, 0.2);
+          border-radius: 10px;
+          transition: background 0.3s;
+        }
+
+        .chat-messages-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(31, 60, 136, 0.4);
+        }
+
+        /* Firefox 스크롤바 */
+        .chat-messages-container {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(31, 60, 136, 0.2) rgba(31, 60, 136, 0.05);
+        }
+
+        /* Textarea 스크롤바 (Chrome, Safari, Edge) */
+        textarea::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        textarea::-webkit-scrollbar-track {
+          background: rgba(31, 60, 136, 0.05);
+          border-radius: 10px;
+        }
+
+        textarea::-webkit-scrollbar-thumb {
+          background: rgba(31, 60, 136, 0.2);
+          border-radius: 10px;
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover {
+          background: rgba(31, 60, 136, 0.3);
         }
       `}</style>
     </div>

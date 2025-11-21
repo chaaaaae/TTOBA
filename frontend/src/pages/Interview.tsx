@@ -12,6 +12,8 @@ type SttState = 'idle' | 'starting' | 'recording' | 'transcribing'
 export default function Interview() {
   const navigate = useNavigate()
   const [isRecording, setIsRecording] = useState(true)
+  const [cameraEnabled, setCameraEnabled] = useState(true) // 카메라 온오프
+  const [micEnabled, setMicEnabled] = useState(true) // 마이크 온오프
   const [elapsedTime, setElapsedTime] = useState(0)
   const [currentQuestion, setCurrentQuestion] = useState(1)
   const [totalQuestions] = useState(8)
@@ -77,6 +79,14 @@ export default function Interview() {
     if (window.confirm('면접을 종료하시겠습니까?')) {
       navigate('/report/1')
     }
+  }
+
+  const handleToggleCamera = () => {
+    setCameraEnabled(prev => !prev)
+  }
+
+  const handleToggleMic = () => {
+    setMicEnabled(prev => !prev)
   }
 
   // 🎤 "음성으로 답변하기 / 음성 답변 중지" 버튼 클릭 핸들러
@@ -176,13 +186,21 @@ export default function Interview() {
               'linear-gradient(135deg, rgba(31, 60, 136, 0.3), rgba(44, 77, 247, 0.3))'
           }}
         >
-          <CameraView isRecording={isRecording} />
+          <CameraView 
+            isRecording={isRecording} 
+            cameraEnabled={cameraEnabled}
+            micEnabled={micEnabled}
+          />
         </div>
 
         {/* Bottom Control Bar */}
         <ControlBar
           isRecording={isRecording}
+          cameraEnabled={cameraEnabled}
+          micEnabled={micEnabled}
           onToggleRecording={() => setIsRecording(!isRecording)}
+          onToggleCamera={handleToggleCamera}
+          onToggleMic={handleToggleMic}
           onEndInterview={handleEndInterview}
         />
 
@@ -203,14 +221,23 @@ export default function Interview() {
       </div>
 
       {/* Right Side - Chat Panel */}
-      <ChatPanel
-        messages={messages}
-        onSendMessage={handleSendMessage}
-        disabled={false}
-        onVoiceClick={handleVoiceClick}
-        voiceText={voiceText}
-        sttState={sttState}
-      />
+      <div
+        style={{
+          height: '100vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <ChatPanel
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          disabled={false}
+          onVoiceClick={handleVoiceClick}
+          voiceText={voiceText}
+          sttState={sttState}
+        />
+      </div>
     </div>
   )
 }
