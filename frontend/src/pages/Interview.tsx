@@ -1,45 +1,67 @@
 // src/pages/Interview.tsx
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import InterviewHUD from '../components/interview/InterviewHUD'
 import CameraView from '../components/interview/CameraView'
 import ChatPanel from '../components/interview/ChatPanel'
 import ControlBar from '../components/interview/ControlBar'
+import { ALL_QUESTIONS } from '../data/questionBank'
 
-// 🔥 STT 상태 타입
+// 🔊 STT 상태 타입
 type SttState = 'idle' | 'starting' | 'recording' | 'transcribing'
+
+// QuestionBank에서 넘어오는 state 타입
+type InterviewLocationState = {
+  mode?: 'practice_set'
+  setId?: string
+  setTitle?: string
+  setIcon?: string
+  questionIds?: string[] // PRACTICE_SETS 안의 questions 배열
+}
+
+// 채팅 메시지 타입
+type Message = {
+  type: 'ai' | 'user'
+  content: string
+  timestamp: Date
+}
 
 export default function Interview() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const state = (location.state || {}) as InterviewLocationState
+
+  // 🔹 넘어온 questionIds 기준으로 질문 배열 구성
+  const questionsFromSet =
+    state.questionIds && state.questionIds.length > 0
+      ? ALL_QUESTIONS.filter((q) => state.questionIds!.includes(q.id))
+      : ALL_QUESTIONS.slice(0, 8) // 혹시 없으면 기본 8개 사용
+
+  // 실제 인터뷰에서 사용할 질문들
+  const [questions] = useState(questionsFromSet)
+  const [totalQuestions] = useState(questionsFromSet.length || 1)
+
+  // 🔥 아직 질문 시작 전 → -1
+  // 0부터는 Q1, Q2, ... 의미
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1)
+
   const [isRecording, setIsRecording] = useState(true)
-  const [cameraEnabled, setCameraEnabled] = useState(true) // 카메라 온오프
-  const [micEnabled, setMicEnabled] = useState(true) // 마이크 온오프
+  const [cameraEnabled, setCameraEnabled] = useState(true)
+  const [micEnabled, setMicEnabled] = useState(true)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [currentQuestion, setCurrentQuestion] = useState(1)
-  const [totalQuestions] = useState(8)
-  const [messages, setMessages] = useState([
+
+  // 🔥 초기 메시지는 인사만
+  const [messages, setMessages] = useState<Message[]>([
     {
-      type: 'ai' as const,
+      type: 'ai',
       content: '안녕하세요! 면접을 시작하겠습니다. 준비되셨나요?',
-      timestamp: new Date()
-    },
-    {
-      type: 'user' as const,
-      content: '네, 준비됐습니다!',
-      timestamp: new Date()
-    },
-    {
-      type: 'ai' as const,
-      content: '좋습니다. 첫 번째 질문입니다. 간단하게 자기소개를 해주세요.',
       timestamp: new Date()
     }
   ])
 
   // 🎤 STT 관련 상태
-  const [voiceText, setVoiceText] = useState('')          // 인식 결과 텍스트
-  const [sttState, setSttState] = useState<SttState>('idle') // STT 상태 관리
-
-  const isVoiceRecording = sttState === 'recording'
+  const [voiceText, setVoiceText] = useState('')
+  const [sttState, setSttState] = useState<SttState>('idle')
 
   // Timer
   useEffect(() => {
@@ -51,27 +73,90 @@ export default function Interview() {
     }
   }, [isRecording])
 
+  // 🔥 사용자가 텍스트로 답변 보냈을 때
   const handleSendMessage = (message: string) => {
+    // 1) 사용자 메시지 추가
     setMessages((prev) => [
       ...prev,
       {
-        type: 'user' as const,
+        type: 'user',
         content: message,
         timestamp: new Date()
       }
     ])
 
-    // AI 응답 시뮬레이션
+    // 2) AI 응답 + 질문 진행
     setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          type: 'ai' as const,
-          content: '좋은 답변입니다. 다음 질문으로 넘어가겠습니다.',
-          timestamp: new Date()
+      setCurrentQuestionIndex((prevIdx) => {
+        // ✅ 아직 질문 시작 전 (-1) → 첫 번째 질문만 던지기
+        if (prevIdx < 0) {
+          if (questions.length === 0) {
+            const firstContent = '질문이 설정되지 않았습니다.'
+            setMessages((prev) => {
+              const last = prev[prev.length - 1]
+              if (last && last.type === 'ai' && last.content === firstContent) {
+                return prev
+              }
+              return [
+                ...prev,
+                {
+                  type: 'ai',
+                  content: firstContent,
+                  timestamp: new Date()
+                }
+              ]
+            })
+            return -1
+          }
+
+          const firstContent = `좋습니다. 첫 번째 질문입니다.\n${questions[0].text}`
+
+          setMessages((prev) => {
+            const last = prev[prev.length - 1]
+            if (last && last.type === 'ai' && last.content === firstContent) {
+              return prev
+            }
+            return [
+              ...prev,
+              {
+                type: 'ai',
+                content: firstContent,
+                timestamp: new Date()
+              }
+            ]
+          })
+
+          // 이제부터는 0번 인덱스 = Q1
+          return 0
         }
-      ])
-      setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions))
+
+        // ✅ 이미 질문 진행 중 → 다음 질문 로직
+        const isLastQuestion = prevIdx >= questions.length - 1
+        const nextIdx = isLastQuestion ? prevIdx : prevIdx + 1
+
+        const nextContent = isLastQuestion
+          ? '좋은 답변 잘 들었습니다. 모든 질문이 종료되었습니다.'
+          : `네, 다음 질문으로 넘어가겠습니다.\n${questions[nextIdx].text}`
+
+        // 중복 AI 멘트 방지
+        setMessages((prev) => {
+          const last = prev[prev.length - 1]
+          if (last && last.type === 'ai' && last.content === nextContent) {
+            return prev
+          }
+
+          return [
+            ...prev,
+            {
+              type: 'ai',
+              content: nextContent,
+              timestamp: new Date()
+            }
+          ]
+        })
+
+        return nextIdx
+      })
     }, 1500)
   }
 
@@ -82,22 +167,20 @@ export default function Interview() {
   }
 
   const handleToggleCamera = () => {
-    setCameraEnabled(prev => !prev)
+    setCameraEnabled((prev) => !prev)
   }
 
   const handleToggleMic = () => {
-    setMicEnabled(prev => !prev)
+    setMicEnabled((prev) => !prev)
   }
 
   // 🎤 "음성으로 답변하기 / 음성 답변 중지" 버튼 클릭 핸들러
   const handleVoiceClick = async () => {
     try {
-      // 🔵 idle -> starting -> recording
       if (sttState === 'idle') {
-        setVoiceText('') // 이전 인식 결과 초기화 (선택)
+        setVoiceText('')
         setSttState('starting')
 
-        // 백엔드 호출 + 최소 1초 대기 동시 진행
         const startRequest = fetch('http://localhost:8000/stt/start', {
           method: 'POST'
         })
@@ -109,11 +192,8 @@ export default function Interview() {
           throw new Error('녹음 시작 실패')
         }
 
-        // 이제 사용자에게 "말해도 된다" 느낌의 상태
         setSttState('recording')
-      }
-      // 🔴 recording -> transcribing -> idle
-      else if (sttState === 'recording') {
+      } else if (sttState === 'recording') {
         setSttState('transcribing')
 
         const res = await fetch('http://localhost:8000/stt/stop', {
@@ -128,16 +208,13 @@ export default function Interview() {
         console.log('STT result:', data)
 
         if (data.text) {
-          // ChatPanel의 입력창에 들어가도록 상태에 저장
           setVoiceText(data.text)
         } else {
           alert('인식된 문장이 없습니다.')
         }
 
         setSttState('idle')
-      }
-      // starting / transcribing 상태에서는 클릭 무시
-      else {
+      } else {
         return
       }
     } catch (err) {
@@ -170,7 +247,12 @@ export default function Interview() {
         <InterviewHUD
           isRecording={isRecording}
           elapsedTime={elapsedTime}
-          currentQuestion={currentQuestion}
+          // 🔥 아직 질문 전이면 0 / N 으로 보이게
+          currentQuestion={
+            currentQuestionIndex < 0
+              ? 0
+              : Math.min(currentQuestionIndex + 1, totalQuestions)
+          }
           totalQuestions={totalQuestions}
         />
 
@@ -186,8 +268,8 @@ export default function Interview() {
               'linear-gradient(135deg, rgba(31, 60, 136, 0.3), rgba(44, 77, 247, 0.3))'
           }}
         >
-          <CameraView 
-            isRecording={isRecording} 
+          <CameraView
+            isRecording={isRecording}
             cameraEnabled={cameraEnabled}
             micEnabled={micEnabled}
           />
@@ -204,7 +286,6 @@ export default function Interview() {
           onEndInterview={handleEndInterview}
         />
 
-        {/* (선택) 음성 녹음 상태 표시 */}
         {(sttState === 'starting' || sttState === 'recording') && (
           <div
             style={{

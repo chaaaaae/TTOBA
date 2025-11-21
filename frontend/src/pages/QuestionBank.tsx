@@ -5,6 +5,7 @@ import QuestionCard from '../components/question-bank/QuestionCard'
 import PracticeSetCard from '../components/question-bank/PracticeSetCard'
 import CategoryFilter from '../components/question-bank/CategoryFilter'
 import SearchBar from '../components/question-bank/SearchBar'
+import { useNavigate } from 'react-router-dom'
 
 import {
   ALL_QUESTIONS,
@@ -25,6 +26,8 @@ export default function QuestionBank() {
 
   // 🔥 어떤 연습 세트를 상세보기로 보고 있는지
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null)
+
+  const navigate = useNavigate()
 
   const handleSearch = () => {
     console.log('검색:', searchQuery)
@@ -228,10 +231,19 @@ export default function QuestionBank() {
               count={set.count}
               difficulty={set.difficulty}
               icon={set.icon}
-              // 선택된 세트 표시용 (PracticeSetCard에 선택 스타일 넣고 싶으면 사용)
               isSelected={selectedSetId === set.id}
-              onStart={() => alert(`${set.title} 시작!`)}
-              // 🔥 이게 "세트 상세보기" 역할 → 아래 질문 리스트가 세트 기준으로 필터됨
+              // 🔥 "시작하기" 눌렀을 때 인터뷰 페이지로 이동 + 세트 정보/질문 id 전달
+              onStart={() =>
+                navigate('/interview', {
+                  state: {
+                    mode: 'practice_set',
+                    setId: set.id,
+                    setTitle: set.title,
+                    setIcon: set.icon,
+                    questionIds: set.questions // ← 이 배열 순서대로 질문 진행
+                  }
+                })
+              }
               onViewDetails={() => handleViewSetDetails(set.id)}
             />
           ))}
