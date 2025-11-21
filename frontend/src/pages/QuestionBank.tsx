@@ -13,6 +13,9 @@ import {
   type QuestionCategoryId
 } from '../data/questionBank'
 
+// 🔥 질문 세트 데이터 (ID 기반 세트)
+import { PRACTICE_SETS } from '../data/practiceSets'
+
 const PAGE_SIZE = 20
 
 export default function QuestionBank() {
@@ -20,31 +23,6 @@ export default function QuestionBank() {
   const [selectedCategory, setSelectedCategory] =
     useState<'all' | QuestionCategoryId>('all')
   const [currentPage, setCurrentPage] = useState(1)
-
-  // 추천 세트는 일단 기존 더미 그대로 사용
-  const practiceSets = [
-    {
-      title: '신입 개발자 필수',
-      description: '신입 개발자가 꼭 준비해야 할 질문들',
-      count: 15,
-      difficulty: 'medium' as const,
-      icon: '💻'
-    },
-    {
-      title: '자기소개 마스터',
-      description: '완벽한 자기소개를 위한 집중 연습',
-      count: 10,
-      difficulty: 'easy' as const,
-      icon: '👋'
-    },
-    {
-      title: '기술 면접 정복',
-      description: '심화 기술 질문으로 실력 향상',
-      count: 20,
-      difficulty: 'hard' as const,
-      icon: '🚀'
-    }
-  ]
 
   const handleSearch = () => {
     console.log('검색:', searchQuery)
@@ -216,10 +194,14 @@ export default function QuestionBank() {
             gap: '1.5rem'
           }}
         >
-          {practiceSets.map((set, idx) => (
+          {PRACTICE_SETS.map((set) => (
             <PracticeSetCard
-              key={idx}
-              {...set}
+              key={set.id}
+              title={set.title}
+              description={set.description}
+              count={set.count}
+              difficulty={set.difficulty}
+              icon={set.icon}
               onStart={() => alert(`${set.title} 시작!`)}
             />
           ))}
