@@ -1,6 +1,7 @@
 // src\App.tsx
 import { Routes, Route } from 'react-router-dom'
 import Index from './pages/Index'
+import Login from './pages/Login'
 import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import QuestionBank from './pages/QuestionBank'
@@ -12,6 +13,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/questions" element={<QuestionBank />} />

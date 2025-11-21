@@ -87,20 +87,20 @@ export default function Index() {
           </ul>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <Link to="/dashboard" style={{
-              padding: '0.85rem 1.8rem',
-              borderRadius: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              textDecoration: 'none',
-              background: 'transparent',
-              color: 'var(--primary-blue)',
-              border: '2px solid var(--primary-blue)',
-              fontSize: '0.95rem'
-            }}>
-              로그인
-            </Link>
+          <Link to="/login" style={{  // /dashboard → /login 으로 변경
+            padding: '0.85rem 1.8rem',
+            borderRadius: '12px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s',
+            textDecoration: 'none',
+            background: 'transparent',
+            color: 'var(--primary-blue)',
+            border: '2px solid var(--primary-blue)',
+            fontSize: '0.95rem'
+          }}>
+            로그인
+          </Link>
             <Link to="/signup" style={{
               padding: '0.85rem 1.8rem',
               borderRadius: '12px',
