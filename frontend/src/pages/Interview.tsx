@@ -1,5 +1,5 @@
 // src/pages/Interview.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import InterviewHUD from '../components/interview/InterviewHUD'
 import CameraView from '../components/interview/CameraView'
@@ -26,6 +26,32 @@ type Message = {
   timestamp: Date
 }
 
+// 📌 Report로 넘길 답변 아이템 타입
+type AnswerForReport = {
+  questionNumber: number
+  question: string
+  answer: string
+  score?: number
+
+  // 🔥 영상 관련
+  duration?: string          // "2분 30초" 같은 표시용
+  durationSeconds?: number   // 초 단위 (합산용)
+  videoUrl?: string
+  videoBlob?: Blob
+}
+
+// 초 → "X분 Y초" 포맷
+const formatDurationKo = (seconds: number): string => {
+  const total = Math.floor(seconds)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+
+  if (m > 0) {
+    return s > 0 ? `${m}분 ${s}초` : `${m}분`
+  }
+  return `${s}초`
+}
+
 export default function Interview() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -45,6 +71,12 @@ export default function Interview() {
   // 0부터는 Q1, Q2, ... 의미
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1)
 
+  // ✅ 항상 최신 인덱스를 참조하기 위한 ref
+  const currentQuestionRef = useRef(-1)
+  useEffect(() => {
+    currentQuestionRef.current = currentQuestionIndex
+  }, [currentQuestionIndex])
+
   const [isRecording, setIsRecording] = useState(true)
   const [cameraEnabled, setCameraEnabled] = useState(true)
   const [micEnabled, setMicEnabled] = useState(true)
@@ -52,6 +84,9 @@ export default function Interview() {
 
   // ✅ 모든 질문이 끝났는지 여부
   const [isFinished, setIsFinished] = useState(false)
+
+  // ✅ Report로 넘길 "질문 + 답변" 목록
+  const [answersForReport, setAnswersForReport] = useState<AnswerForReport[]>([])
 
   // 🔥 초기 메시지는 인사만
   const [messages, setMessages] = useState<Message[]>([
@@ -65,6 +100,100 @@ export default function Interview() {
   // 🎤 STT 관련 상태
   const [voiceText, setVoiceText] = useState('')
   const [sttState, setSttState] = useState<SttState>('idle')
+
+  // ✅ 카메라 스트림 & MediaRecorder 관리
+  const streamRef = useRef<MediaStream | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+
+  // CameraView에서 스트림 전달
+  const handleStreamReady = (stream: MediaStream | null) => {
+    streamRef.current = stream
+  }
+
+  // 🔥 질문별 영상 녹화 시작
+  const startRecordingForQuestion = (questionNumber: number) => {
+    const stream = streamRef.current
+    if (!stream) {
+      console.warn('카메라 스트림 없음, 녹화 시작 불가')
+      return
+    }
+
+    // 혹시 이전 녹화가 살아있으면 정리
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop()
+    }
+
+    const chunks: BlobPart[] = []
+    const recorder = new MediaRecorder(stream)
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        chunks.push(e.data)
+      }
+    }
+
+    recorder.onstop = () => {
+      if (chunks.length === 0) return
+
+      const blob = new Blob(chunks, { type: 'video/webm' })
+      const videoUrl = URL.createObjectURL(blob)
+
+      // 🔥 비디오 메타데이터 읽어서 길이 계산
+      const tempVideo = document.createElement('video')
+      tempVideo.preload = 'metadata'
+      tempVideo.src = videoUrl
+
+      tempVideo.onloadedmetadata = () => {
+        const durationSec = tempVideo.duration || 0
+        const durationLabel = formatDurationKo(durationSec)
+
+        setAnswersForReport((prev) => {
+          const existingIndex = prev.findIndex(
+            (item) => item.questionNumber === questionNumber
+          )
+
+          if (existingIndex >= 0) {
+            const updated = [...prev]
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              videoUrl,
+              videoBlob: blob,
+              duration: durationLabel,
+              durationSeconds: durationSec
+            }
+            return updated
+          }
+
+          const q = questions[questionNumber - 1]
+          return [
+            ...prev,
+            {
+              questionNumber,
+              question: q?.text ?? '',
+              answer: '',
+              videoUrl,
+              videoBlob: blob,
+              duration: durationLabel,
+              durationSeconds: durationSec
+            }
+          ]
+        })
+      }
+    }
+
+    mediaRecorderRef.current = recorder
+    recorder.start()
+    console.log(`▶️ Q${questionNumber} 녹화 시작`)
+  }
+
+  // 🔥 현재 질문에 대한 녹화 종료
+  const stopRecordingForCurrentQuestion = () => {
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state === 'recording') {
+      recorder.stop()
+      console.log('⏹ 녹화 종료')
+    }
+  }
 
   // Timer
   useEffect(() => {
@@ -80,16 +209,20 @@ export default function Interview() {
   useEffect(() => {
     if (isFinished) {
       const timer = setTimeout(() => {
-        navigate('/report/1')
-      }, 2000) // "모든 질문이 종료되었습니다." 멘트 보여줄 시간 조금 줌
+        navigate('/report/1', {
+          state: {
+            answers: answersForReport
+          }
+        })
+      }, 2000) // "모든 질문이 종료되었습니다." 멘트 보여줄 시간
 
       return () => clearTimeout(timer)
     }
-  }, [isFinished, navigate])
+  }, [isFinished, navigate, answersForReport])
 
   // 🔥 사용자가 텍스트로 답변 보냈을 때
   const handleSendMessage = (message: string) => {
-    // 1) 사용자 메시지 추가
+    // 1) 채팅에 사용자 메시지 추가
     setMessages((prev) => [
       ...prev,
       {
@@ -99,10 +232,49 @@ export default function Interview() {
       }
     ])
 
-    // 2) AI 응답 + 질문 진행
+    // ✅ 항상 최신 질문 인덱스를 사용
+    const idx = currentQuestionRef.current
+
+    // 2) 현재 진행 중인 질문에 대한 "답변 기록" 저장
+    if (idx >= 0 && idx < questions.length) {
+      const q = questions[idx]
+
+      setAnswersForReport((prev) => {
+        const questionNumber = idx + 1
+        const existingIndex = prev.findIndex(
+          (item) => item.questionNumber === questionNumber
+        )
+
+        // 같은 질문에 여러 번 답하면 → 답변을 이어붙이기
+        if (existingIndex >= 0) {
+          const updated = [...prev]
+          const prevAnswer = updated[existingIndex].answer
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            answer: prevAnswer ? `${prevAnswer}\n${message}` : message
+          }
+          return updated
+        }
+
+        // 처음 답하는 질문이면 새로 추가
+        return [
+          ...prev,
+          {
+            questionNumber,
+            question: q.text,
+            answer: message,
+            score: undefined,
+            duration: undefined,
+            durationSeconds: undefined
+          }
+        ]
+      })
+    }
+
+    // 3) AI 응답 + 질문 진행 (+ 녹화 제어)
     setTimeout(() => {
       setCurrentQuestionIndex((prevIdx) => {
-        // ✅ 아직 질문 시작 전 (-1) → 첫 번째 질문만 던지기
+        // ✅ 아직 질문 시작 전 (-1) → 첫 번째 질문 던지기
         if (prevIdx < 0) {
           if (questions.length === 0) {
             const firstContent = '질문이 설정되지 않았습니다.'
@@ -140,12 +312,19 @@ export default function Interview() {
             ]
           })
 
+          // 🔥 Q1 영상 녹화 시작
+          startRecordingForQuestion(1)
+
           // 이제부터는 0번 인덱스 = Q1
           return 0
         }
 
         // ✅ 이미 질문 진행 중 → 다음 질문 로직
         const isLastQuestion = prevIdx >= questions.length - 1
+
+        // 🔥 현재 질문 녹화 종료
+        stopRecordingForCurrentQuestion()
+
         const nextIdx = isLastQuestion ? prevIdx : prevIdx + 1
 
         const nextContent = isLastQuestion
@@ -169,10 +348,15 @@ export default function Interview() {
           ]
         })
 
-        // ✅ 마지막 질문이면 인터뷰 종료 플래그 ON
+        // ✅ 마지막 질문이면 인터뷰 종료 플래그 ON → 리포트로 이동
         if (isLastQuestion) {
           setIsFinished(true)
+          return prevIdx
         }
+
+        // 🔥 다음 질문(Q{nextIdx+1})부터 새로 녹화 시작
+        const nextQuestionNumber = nextIdx + 1
+        startRecordingForQuestion(nextQuestionNumber)
 
         return nextIdx
       })
@@ -181,7 +365,13 @@ export default function Interview() {
 
   const handleEndInterview = () => {
     if (window.confirm('면접을 종료하시겠습니까?')) {
-      navigate('/report/1')
+      // 진행 중인 질문 녹화 종료
+      stopRecordingForCurrentQuestion()
+      navigate('/report/1', {
+        state: {
+          answers: answersForReport
+        }
+      })
     }
   }
 
@@ -227,7 +417,9 @@ export default function Interview() {
         console.log('STT result:', data)
 
         if (data.text) {
+          // 입력창에 뿌리는 건 그대로 유지
           setVoiceText(data.text)
+          // 필요하면 여기서 handleSendMessage(data.text)도 호출 가능
         } else {
           alert('인식된 문장이 없습니다.')
         }
@@ -291,6 +483,7 @@ export default function Interview() {
             isRecording={isRecording}
             cameraEnabled={cameraEnabled}
             micEnabled={micEnabled}
+            onStreamReady={handleStreamReady}
           />
         </div>
 

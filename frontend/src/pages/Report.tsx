@@ -1,15 +1,43 @@
 // src/pages/Report.tsx
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import ScoreCard from '../components/report/ScoreCard'
 import InsightCard from '../components/report/InsightCard'
 import AnswerCard from '../components/report/AnswerCard'
 import FeedbackSection from '../components/report/FeedbackSection'
 import RightDrawer from '../components/report/RightDrawer'
 
+// 초 → "X분 Y초" 포맷
+const formatDurationKo = (seconds: number): string => {
+  const total = Math.floor(seconds)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+
+  if (m > 0) {
+    return s > 0 ? `${m}분 ${s}초` : `${m}분`
+  }
+  return `${s}초`
+}
+
+// 📌 Interview에서 넘어오는 답변 타입
+type AnswerItem = {
+  questionNumber: number
+  question: string
+  answer: string
+  score?: number
+  duration?: string
+  durationSeconds?: number
+  videoUrl?: string
+}
+
 export default function Report() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // 🔹 Interview에서 navigate로 넘긴 state
+  const state = location.state as { answers?: AnswerItem[] } | null
+  const answersFromInterview = state?.answers ?? []
 
   // 어떤 질문의 상세피드백을 보고 있는지 (인덱스)
   const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null)
@@ -35,22 +63,37 @@ export default function Report() {
     }
   ]
 
-  const answers = [
+  // ✅ Interview에서 넘어온 답변이 있으면 그것을 사용
+  //    없으면 기존 더미 데이터를 fallback으로 사용
+  const fallbackAnswers: AnswerItem[] = [
     {
       questionNumber: 1,
       question: '간단하게 자기소개를 해주세요.',
       answer: '안녕하세요. 프론트엔드 개발자를 희망하는 김지훈입니다...',
       score: 95,
-      duration: '2분 30초'
+      duration: '2분 30초',
+      durationSeconds: 150
     },
     {
       questionNumber: 2,
       question: '우리 회사에 지원한 이유는 무엇인가요?',
       answer: '귀사의 혁신적인 기술 문화와 사용자 중심의 개발 철학에...',
       score: 88,
-      duration: '3분 10초'
+      duration: '3분 10초',
+      durationSeconds: 190
     }
   ]
+
+  const answers: AnswerItem[] =
+    answersFromInterview.length > 0 ? answersFromInterview : fallbackAnswers
+
+  // 🔥 전체 면접 시간 (모든 질문 durationSeconds 합산)
+  const totalDurationSeconds = answers.reduce(
+    (sum, a) => sum + (a.durationSeconds ?? 0),
+    0
+  )
+  const totalDurationLabel =
+    totalDurationSeconds > 0 ? formatDurationKo(totalDurationSeconds) : '—분'
 
   const feedbacks = [
     {
@@ -72,6 +115,9 @@ export default function Report() {
       items: ['STAR 기법 활용', '구체적 수치 제시', '결론 먼저 말하기']
     }
   ]
+
+  const currentAnswer =
+    openQuestionIndex !== null ? answers[openQuestionIndex] : null
 
   return (
     <div style={{ background: 'var(--bg-light)', minHeight: '100vh' }}>
@@ -156,7 +202,8 @@ export default function Report() {
         {/* Report Header */}
         <div
           style={{
-            background: 'linear-gradient(135deg, var(--primary-blue), var(--primary-bright))',
+            background:
+              'linear-gradient(135deg, var(--primary-blue), var(--primary-bright))',
             borderRadius: '24px',
             padding: '3rem',
             marginBottom: '3rem',
@@ -206,8 +253,9 @@ export default function Report() {
                 }}
               >
                 <span>📅 2024.03.15</span>
-                <span>⏱️ 25분</span>
-                <span>💬 8개 질문</span>
+                {/* 🔥 전체 면접 시간 */}
+                <span>⏱️ {totalDurationLabel}</span>
+                <span>💬 {answers.length}개 질문</span>
               </div>
             </div>
 
@@ -252,7 +300,9 @@ export default function Report() {
         </div>
 
         {/* Main Content Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}
+        >
           {/* Left Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {/* Key Insights */}
@@ -292,8 +342,11 @@ export default function Report() {
                 {answers.map((answer, idx) => (
                   <AnswerCard
                     key={idx}
-                    {...answer}
-                    // 🔽 여기서 상세 피드백 버튼 → 오른쪽 패널 열기
+                    questionNumber={answer.questionNumber}
+                    question={answer.question}
+                    answer={answer.answer}
+                    score={answer.score ?? 0}
+                    duration={answer.duration ?? ''}
                     onViewFeedback={() => setOpenQuestionIndex(idx)}
                   />
                 ))}
@@ -340,12 +393,11 @@ export default function Report() {
         </div>
       </div>
 
-      {/* 🔽 오른쪽 흰 패널 (지금은 내용 비워둠) */}
+      {/* 🔽 오른쪽 상세 피드백 패널 */}
       <RightDrawer
         isOpen={openQuestionIndex !== null}
         onClose={() => setOpenQuestionIndex(null)}
       >
-        {/* 여기부터 패널 안 내용 (대충 예쁜 틀만) */}
         <div className="flex h-full flex-col">
           {/* 상단 헤더 */}
           <div className="flex items-center justify-between border-b px-6 py-4">
@@ -354,7 +406,7 @@ export default function Report() {
                 상세 피드백
               </span>
               <span className="text-sm font-semibold text-slate-900">
-                Q{openQuestionIndex !== null ? answers[openQuestionIndex].questionNumber : ''}
+                Q{currentAnswer?.questionNumber ?? ''}
               </span>
             </div>
             <button
@@ -365,13 +417,47 @@ export default function Report() {
             </button>
           </div>
 
-          {/* 내용 영역 (지금은 빈 상태여도 OK) */}
+          {/* 내용 영역 */}
           <div className="flex-1 overflow-y-auto px-6 py-4">
-            {/* 나중에 여기다가 실제 상세 결과 넣으면 됨 */}
+            {currentAnswer && (
+              <div className="flex flex-col gap-4">
+                {/* 질문 & 텍스트 답변 */}
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-slate-400">질문</div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {currentAnswer.question}
+                  </div>
+
+                  <div className="mt-4 text-xs font-semibold text-slate-400">
+                    나의 답변
+                  </div>
+                  <div className="whitespace-pre-wrap text-sm text-slate-800">
+                    {currentAnswer.answer || '답변 내용이 없습니다.'}
+                  </div>
+                </div>
+
+                {/* 🔥 질문별 답변 영상 */}
+                <div className="mt-6">
+                  <div className="text-xs font-semibold text-slate-400">
+                    답변 영상
+                  </div>
+                  {currentAnswer.videoUrl ? (
+                    <video
+                      src={currentAnswer.videoUrl}
+                      controls
+                      className="mt-2 w-full rounded-lg border border-slate-200"
+                    />
+                  ) : (
+                    <div className="mt-2 text-xs text-slate-400">
+                      이 질문에 대해 저장된 영상이 없습니다.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </RightDrawer>
-
     </div>
   )
 }
