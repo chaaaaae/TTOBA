@@ -70,7 +70,7 @@ export default function Report() {
         const res = await fetch(`${API_BASE_URL}/api/analyze-answer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: baseAnswers }),
+          body: JSON.stringify({ items: baseAnswers })
         })
 
         console.log('📡 /api/analyze-answer status:', res.status)
@@ -156,7 +156,7 @@ export default function Report() {
       />
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '3rem 2rem' }}>
-        {/* 🔍 분석 로딩/에러 상태 대충이라도 표시 */}
+        {/* 🔍 분석 로딩/에러 상태 표시 */}
         {isAnalyzing && (
           <div className="mb-3 text-sm text-slate-500">
             이 답변들에 대한 AI 분석을 생성 중입니다...
@@ -181,10 +181,10 @@ export default function Report() {
             marginBottom: '3rem'
           }}
         >
-          <ScoreCard label="내용" score={90} icon="📝" />
-          <ScoreCard label="전달력" score={88} icon="🎤" />
-          <ScoreCard label="자신감" score={95} icon="💪" />
-          <ScoreCard label="명확성" score={92} icon="💡" />
+          <ScoreCard label="집중도" level={'높음'} icon="🔍" />
+          <ScoreCard label="흥미" level={'보통'} icon="💡" />
+          <ScoreCard label="이해도" level={'낮음'} icon="🧠" />
+          <ScoreCard label="안정감" level={'보통'} icon="🌿" />
         </div>
 
         <div
@@ -199,7 +199,8 @@ export default function Report() {
           </div>
 
           <div>
-            <FeedbackSidebar />
+            {/* ✅ 여기만 변경! 전체 분석용 answers 전달 */}
+            <FeedbackSidebar answers={answersWithAnalysis} />
           </div>
         </div>
       </div>
