@@ -1,5 +1,5 @@
 // src/pages/Report.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 
 import ScoreCard from '../components/report/ScoreCard'
@@ -20,16 +20,11 @@ export default function Report() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Interview에서 navigate로 넘긴 state
   const state = location.state as { answers?: AnswerItem[] } | null
   const answersFromInterview = state?.answers ?? []
 
-  // 어떤 질문의 상세피드백을 보고 있는지 (인덱스)
-  const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(
-    null
-  )
+  const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null)
 
-  // Interview에서 넘어온 답변이 있으면 그것을 사용, 없으면 더미 데이터 사용
   const fallbackAnswers: AnswerItem[] = [
     {
       questionNumber: 1,
@@ -49,11 +44,100 @@ export default function Report() {
     }
   ]
 
-  const answers: AnswerItem[] =
+  const baseAnswers: AnswerItem[] =
     answersFromInterview.length > 0 ? answersFromInterview : fallbackAnswers
 
-  // 전체 면접 시간 (모든 질문 durationSeconds 합산)
-  const totalDurationSeconds = answers.reduce(
+  const [answersWithAnalysis, setAnswersWithAnalysis] =
+    useState<AnswerItem[]>(baseAnswers)
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null)
+
+  // ✅ 처음 마운트될 때 한 번만 실행
+  useEffect(() => {
+    if (!baseAnswers || baseAnswers.length === 0) return
+
+    const controller = new AbortController()
+
+    const run = async () => {
+      try {
+        setIsAnalyzing(true)
+        setAnalyzeError(null)
+
+        const API_BASE_URL =
+          import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+
+        const res = await fetch(`${API_BASE_URL}/api/analyze-answer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: baseAnswers }),
+        })
+
+        console.log('📡 /api/analyze-answer status:', res.status)
+
+        if (!res.ok) {
+          let message = '분석 요청에 실패했습니다.'
+          try {
+            const errBody = await res.json()
+            console.log('❌ analyze-error body:', errBody)
+            if (errBody?.detail) {
+              message = `분석 요청 실패: ${errBody.detail}`
+            }
+          } catch {
+            // ignore
+          }
+          throw new Error(message)
+        }
+
+        const data = await res.json()
+        console.log('✅ analyze response:', data)
+
+        const items = (data.items ?? []) as any[]
+
+        const byQuestionId: Record<number, any> = {}
+        for (const item of items) {
+          if (typeof item.question_id === 'number') {
+            byQuestionId[item.question_id] = item
+          }
+        }
+
+        const merged = baseAnswers.map((ans) => {
+          const analysis = byQuestionId[ans.questionNumber]
+          if (!analysis || analysis.parse_error) return ans
+
+          return {
+            ...ans,
+            aiScore: analysis.score,
+            aiAnswerSummary: analysis.answer_summary,
+            aiStrengths: analysis.strengths,
+            aiImprovements: analysis.improvements,
+            aiSuggestions: analysis.suggestions,
+            aiRewrittenAnswer: analysis.rewritten_answer,
+            aiStructure: analysis.structure,
+            aiRecommendedStructure: analysis.recommended_structure
+          } as AnswerItem
+        })
+
+        console.log('🧩 merged answers:', merged)
+        setAnswersWithAnalysis(merged)
+      } catch (err: any) {
+        console.error('🔥 analyze exception:', err)
+        setAnalyzeError(err.message ?? '알 수 없는 오류가 발생했습니다.')
+      } finally {
+        setIsAnalyzing(false)
+      }
+    }
+
+    run()
+
+    return () => {
+      controller.abort()
+    }
+    // ⛔ 의존성에 baseAnswers 넣지 말 것! 무한루프 남
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // ← 빈 배열
+
+  const totalDurationSeconds = answersWithAnalysis.reduce(
     (sum, a) => sum + (a.durationSeconds ?? 0),
     0
   )
@@ -61,33 +145,34 @@ export default function Report() {
     totalDurationSeconds > 0 ? formatDurationKo(totalDurationSeconds) : '—분'
 
   const currentAnswer =
-    openQuestionIndex !== null ? answers[openQuestionIndex] : null
+    openQuestionIndex !== null ? answersWithAnalysis[openQuestionIndex] : null
 
   return (
     <div style={{ background: 'var(--bg-light)', minHeight: '100vh' }}>
-      {/* 상단 네비게이션 */}
       <ReportTopBar
         onBack={() => navigate(-1)}
-        // TODO: 필요하면 나중에 핸들러 연결
-        onDownloadPdf={() => {
-          /* 구현 예정 */
-        }}
-        onRetry={() => {
-          /* 구현 예정 */
-        }}
+        onDownloadPdf={() => {}}
+        onRetry={() => {}}
       />
 
-      {/* Main Content */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '3rem 2rem' }}>
-        {/* Report Header */}
+        {/* 🔍 분석 로딩/에러 상태 대충이라도 표시 */}
+        {isAnalyzing && (
+          <div className="mb-3 text-sm text-slate-500">
+            이 답변들에 대한 AI 분석을 생성 중입니다...
+          </div>
+        )}
+        {analyzeError && (
+          <div className="mb-3 text-sm text-red-500">{analyzeError}</div>
+        )}
+
         <ReportHeader
           reportId={id}
           totalDurationLabel={totalDurationLabel}
-          questionCount={answers.length}
+          questionCount={answersWithAnalysis.length}
           overallScore={92}
         />
 
-        {/* Score Cards */}
         <div
           style={{
             display: 'grid',
@@ -102,27 +187,23 @@ export default function Report() {
           <ScoreCard label="명확성" score={92} icon="💡" />
         </div>
 
-        {/* Main Content Grid */}
         <div
           style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}
         >
-          {/* Left Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <InsightsSection />
             <AnswersSection
-              answers={answers}
+              answers={answersWithAnalysis}
               onSelectQuestion={(idx) => setOpenQuestionIndex(idx)}
             />
           </div>
 
-          {/* Right Column */}
           <div>
             <FeedbackSidebar />
           </div>
         </div>
       </div>
 
-      {/* 오른쪽 상세 피드백 패널 */}
       <RightDrawer
         isOpen={openQuestionIndex !== null}
         onClose={() => setOpenQuestionIndex(null)}
