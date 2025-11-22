@@ -8,6 +8,7 @@ import QuestionBank from './pages/QuestionBank'
 import Interview from './pages/Interview'
 import Report from './pages/Report'
 import NotFound from './pages/NotFound'
+import ReportLoading from './pages/ReportLoading'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/questions" element={<QuestionBank />} />
       <Route path="/interview" element={<Interview />} />
+      <Route path="/report/:id/loading" element={<ReportLoading />} />
       <Route path="/report/:id" element={<Report />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -209,7 +209,7 @@ export default function Interview() {
   useEffect(() => {
     if (isFinished) {
       const timer = setTimeout(() => {
-        navigate('/report/1', {
+        navigate('/report/1/loading', {
           state: {
             answers: answersForReport
           }
@@ -367,7 +367,7 @@ export default function Interview() {
     if (window.confirm('면접을 종료하시겠습니까?')) {
       // 진행 중인 질문 녹화 종료
       stopRecordingForCurrentQuestion()
-      navigate('/report/1', {
+      navigate('/report/1/loading', {
         state: {
           answers: answersForReport
         }

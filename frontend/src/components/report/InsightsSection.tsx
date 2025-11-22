@@ -35,7 +35,7 @@ export default function InsightsSection() {
           marginBottom: '1.5rem'
         }}
       >
-        핵심 인사이트 💡
+        답변 통계 📊
       </h2>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

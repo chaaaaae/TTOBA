@@ -1,5 +1,5 @@
 // src/pages/Report.tsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 
 import ScoreCard from '../components/report/ScoreCard'
@@ -21,10 +21,9 @@ export default function Report() {
   const location = useLocation()
 
   const state = location.state as { answers?: AnswerItem[] } | null
-  const answersFromInterview = state?.answers ?? []
+  const answersFromLoading = state?.answers ?? []
 
-  const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null)
-
+  // 혹시 직접 URL로 들어온 경우 대비용 fallback
   const fallbackAnswers: AnswerItem[] = [
     {
       questionNumber: 1,
@@ -44,100 +43,12 @@ export default function Report() {
     }
   ]
 
-  const baseAnswers: AnswerItem[] =
-    answersFromInterview.length > 0 ? answersFromInterview : fallbackAnswers
+  const answers: AnswerItem[] =
+    answersFromLoading.length > 0 ? answersFromLoading : fallbackAnswers
 
-  const [answersWithAnalysis, setAnswersWithAnalysis] =
-    useState<AnswerItem[]>(baseAnswers)
+  const [openQuestionIndex, setOpenQuestionIndex] = useState<number | null>(null)
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analyzeError, setAnalyzeError] = useState<string | null>(null)
-
-  // ✅ 처음 마운트될 때 한 번만 실행
-  useEffect(() => {
-    if (!baseAnswers || baseAnswers.length === 0) return
-
-    const controller = new AbortController()
-
-    const run = async () => {
-      try {
-        setIsAnalyzing(true)
-        setAnalyzeError(null)
-
-        const API_BASE_URL =
-          import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
-
-        const res = await fetch(`${API_BASE_URL}/api/analyze-answer`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: baseAnswers })
-        })
-
-        console.log('📡 /api/analyze-answer status:', res.status)
-
-        if (!res.ok) {
-          let message = '분석 요청에 실패했습니다.'
-          try {
-            const errBody = await res.json()
-            console.log('❌ analyze-error body:', errBody)
-            if (errBody?.detail) {
-              message = `분석 요청 실패: ${errBody.detail}`
-            }
-          } catch {
-            // ignore
-          }
-          throw new Error(message)
-        }
-
-        const data = await res.json()
-        console.log('✅ analyze response:', data)
-
-        const items = (data.items ?? []) as any[]
-
-        const byQuestionId: Record<number, any> = {}
-        for (const item of items) {
-          if (typeof item.question_id === 'number') {
-            byQuestionId[item.question_id] = item
-          }
-        }
-
-        const merged = baseAnswers.map((ans) => {
-          const analysis = byQuestionId[ans.questionNumber]
-          if (!analysis || analysis.parse_error) return ans
-
-          return {
-            ...ans,
-            aiScore: analysis.score,
-            aiAnswerSummary: analysis.answer_summary,
-            aiStrengths: analysis.strengths,
-            aiImprovements: analysis.improvements,
-            aiSuggestions: analysis.suggestions,
-            aiRewrittenAnswer: analysis.rewritten_answer,
-            aiStructure: analysis.structure,
-            aiRecommendedStructure: analysis.recommended_structure
-          } as AnswerItem
-        })
-
-        console.log('🧩 merged answers:', merged)
-        setAnswersWithAnalysis(merged)
-      } catch (err: any) {
-        console.error('🔥 analyze exception:', err)
-        setAnalyzeError(err.message ?? '알 수 없는 오류가 발생했습니다.')
-      } finally {
-        setIsAnalyzing(false)
-      }
-    }
-
-    run()
-
-    return () => {
-      controller.abort()
-    }
-    // ⛔ 의존성에 baseAnswers 넣지 말 것! 무한루프 남
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // ← 빈 배열
-
-  const totalDurationSeconds = answersWithAnalysis.reduce(
+  const totalDurationSeconds = answers.reduce(
     (sum, a) => sum + (a.durationSeconds ?? 0),
     0
   )
@@ -145,7 +56,7 @@ export default function Report() {
     totalDurationSeconds > 0 ? formatDurationKo(totalDurationSeconds) : '—분'
 
   const currentAnswer =
-    openQuestionIndex !== null ? answersWithAnalysis[openQuestionIndex] : null
+    openQuestionIndex !== null ? answers[openQuestionIndex] : null
 
   return (
     <div style={{ background: 'var(--bg-light)', minHeight: '100vh' }}>
@@ -156,20 +67,10 @@ export default function Report() {
       />
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '3rem 2rem' }}>
-        {/* 🔍 분석 로딩/에러 상태 표시 */}
-        {isAnalyzing && (
-          <div className="mb-3 text-sm text-slate-500">
-            이 답변들에 대한 AI 분석을 생성 중입니다...
-          </div>
-        )}
-        {analyzeError && (
-          <div className="mb-3 text-sm text-red-500">{analyzeError}</div>
-        )}
-
         <ReportHeader
           reportId={id}
           totalDurationLabel={totalDurationLabel}
-          questionCount={answersWithAnalysis.length}
+          questionCount={answers.length}
           overallScore={92}
         />
 
@@ -193,14 +94,14 @@ export default function Report() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <InsightsSection />
             <AnswersSection
-              answers={answersWithAnalysis}
+              answers={answers}
               onSelectQuestion={(idx) => setOpenQuestionIndex(idx)}
             />
           </div>
 
           <div>
-            {/* ✅ 여기만 변경! 전체 분석용 answers 전달 */}
-            <FeedbackSidebar answers={answersWithAnalysis} />
+            {/* ✅ 여기서 answers는 이미 분석이 끝난 상태 */}
+            <FeedbackSidebar answers={answers} />
           </div>
         </div>
       </div>
