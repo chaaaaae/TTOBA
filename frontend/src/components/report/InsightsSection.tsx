@@ -6,21 +6,21 @@ import InsightCard from './InsightCard'
 const insights = [
   {
     type: 'positive' as const,
-    icon: '✅',
-    title: '명확한 답변 구조',
-    description: 'STAR 기법을 활용하여 체계적으로 답변하셨습니다.'
+    icon: '⏱️',
+    title: '말하기 속도 안정성',
+    description: '인터뷰에 적합한 일정한 속도를 유지하셨습니다.'
   },
   {
     type: 'positive' as const,
-    icon: '🎯',
-    title: '구체적인 사례 제시',
-    description: '실제 경험을 바탕으로 한 구체적인 답변이 돋보였습니다.'
+    icon: '🤫',
+    title: '침묵 비율 관리',
+    description: '답변 중 불필요한 침묵 없이 자연스러운 호흡 간격을 유지하셨습니다.'
   },
   {
     type: 'neutral' as const,
-    icon: '⚡',
-    title: '말하기 속도 조절',
-    description: '평소보다 15% 빠른 속도로 답변하셨어요.'
+    icon: '🗣️',
+    title: '말버릇 및 문장 마무리',
+    description: '문장 끝을 흐리지 않고 명확하게 마무리하는 안정적인 말투가 관찰되었습니다.'
   }
 ]
 

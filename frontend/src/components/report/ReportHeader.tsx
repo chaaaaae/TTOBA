@@ -69,7 +69,7 @@ export default function ReportHeader({
             }}
           >
             {/* TODO: 날짜는 나중에 실제 데이터로 치환 */}
-            <span>📅 2024.03.15</span>
+            <span>📅 2025.11.25</span>
             <span>⏱️ {totalDurationLabel}</span>
             <span>💬 {questionCount}개 질문</span>
           </div>

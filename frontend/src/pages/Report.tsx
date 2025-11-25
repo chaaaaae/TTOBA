@@ -71,7 +71,7 @@ export default function Report() {
           reportId={id}
           totalDurationLabel={totalDurationLabel}
           questionCount={answers.length}
-          overallScore={92}
+          overallScore={72}
         />
 
         <div

@@ -18,7 +18,8 @@
 
 {
   "question_id": number,
-
+  "score": number,
+  
   "answer_summary": string,
 
   "structure": {
@@ -62,8 +63,6 @@
   "strengths": [ string ],
   "improvements": [ string ],
   "suggestions": [ string ],
-
-  "score": number,
 
   "rewritten_answer": string
 }

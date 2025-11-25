@@ -35,7 +35,7 @@
    - 추가 설명 없음  
    - 자연어 문단 없음  
    - 마크다운 없음  
-   - JSON 외의 텍스트 금지  
+   - JSON 외의 텍스트 금지
 
 2. strengths, weaknesses, recommendations  
    → 각각 **2~4개의 짧고 명확한 문장**으로 구성합니다.

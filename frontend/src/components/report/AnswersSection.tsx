@@ -1,5 +1,3 @@
-// src/components/report/AnswersSection.tsx
-
 import React from 'react'
 import AnswerCard from './AnswerCard'
 import type { AnswerItem } from '../../types/report'
@@ -33,7 +31,9 @@ export default function AnswersSection({
             questionNumber={answer.questionNumber}
             question={answer.question}
             answer={answer.answer}
-            score={answer.score ?? 0}
+            // 🔹 GPT가 반환한 aiScore 사용 (없으면 0점)
+            score={answer.aiScore ?? 0}
+            // 🔹 duration이 문자열로 안 들어왔을 수 있으니 방어 코드
             duration={answer.duration ?? ''}
             onViewFeedback={() => onSelectQuestion(idx)}
           />
