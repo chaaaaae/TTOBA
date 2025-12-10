@@ -10,7 +10,6 @@ interface CameraViewProps {
     expression: string
     eyeContact: string
   }
-  // ✅ 추가: 부모(Interview)로 스트림을 넘겨주는 콜백
   onStreamReady?: (stream: MediaStream | null) => void
 }
 
@@ -34,19 +33,8 @@ export default function CameraView({
 
   const displayStats = stats || defaultStats
 
-  // 🔍 디버깅: 상태 변경 추적
+  // 🔥 카메라 스트림 획득
   useEffect(() => {
-    console.log('📹 CameraView 상태:', {
-      cameraEnabled,
-      isLoading,
-      hasError: !!error,
-      hasStream: !!stream,
-      videoRefExists: !!videoRef.current
-    })
-  }, [cameraEnabled, isLoading, error, stream])
-
-  useEffect(() => {
-    // 카메라와 마이크 접근
     const initMedia = async () => {
       try {
         setIsLoading(true)
@@ -65,14 +53,7 @@ export default function CameraView({
         setStream(mediaStream)
         setError('')
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream
-          console.log('✅ 비디오 태그에 스트림 설정 완료')
-        } else {
-          console.warn('⚠️ videoRef.current가 없음')
-        }
-
-        // 🔥 스트림 준비되면 부모로 올려보내기
+        // ✅ 스트림을 부모로 전달
         onStreamReady?.(mediaStream)
       } catch (err) {
         console.error('❌ 미디어 접근 오류:', err)
@@ -89,7 +70,7 @@ export default function CameraView({
         }
       } finally {
         setIsLoading(false)
-        console.log('📹 카메라 초기화 완료 (isLoading = false)')
+        console.log('📹 카메라 초기화 완료')
       }
     }
 
@@ -105,6 +86,24 @@ export default function CameraView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 🔥 스트림이 준비되면 비디오 태그에 연결
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream
+      console.log('✅ 비디오 태그에 스트림 설정 완료')
+    } else if (stream && !videoRef.current) {
+      console.warn('⚠️ 스트림은 있지만 videoRef가 없음 - 재시도 중...')
+      // 약간의 딜레이 후 재시도
+      const timer = setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          console.log('✅ 재시도 성공: 비디오 태그에 스트림 설정 완료')
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [stream])
 
   // 카메라/마이크 온오프 제어
   useEffect(() => {
@@ -218,11 +217,8 @@ export default function CameraView({
             position: 'absolute',
             top: 0,
             left: 0,
-            // ✅ 임시 디버깅: 항상 visible로 표시
-            visibility: 'visible',
-            // visibility: cameraEnabled ? 'visible' : 'hidden',
-            zIndex: 1,
-            background: 'black' // 디버깅용
+            visibility: cameraEnabled ? 'visible' : 'hidden',
+            zIndex: 1
           }}
         />
       )}
