@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import FeedbackSection from './FeedbackSection'
 import type { AnswerItem } from '../../types/report'
-import { API_BASE_URL } from '../../lib/utils'
+import { API_BASE_URL } from '../../lib/api'
 
 // ✅ 백엔드 analyze-overall 응답 타입
 type OverallFeedback = {

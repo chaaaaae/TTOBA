@@ -2,7 +2,7 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { AnswerItem } from '../types/report'
-import { API_BASE_URL } from '../lib/utils'
+import { API_BASE_URL } from '../lib/api'
 
 export default function ReportLoading() {
   const { id } = useParams()

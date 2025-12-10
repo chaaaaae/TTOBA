@@ -6,7 +6,7 @@ import CameraView from '../components/interview/CameraView'
 import ChatPanel from '../components/interview/ChatPanel'
 import ControlBar from '../components/interview/ControlBar'
 import { ALL_QUESTIONS } from '../data/questionBank'
-import { API_BASE_URL } from '../lib/utils'
+import { API_BASE_URL } from '../lib/api'
 
 // 🔊 STT 상태 타입
 type SttState = 'idle' | 'starting' | 'recording' | 'transcribing'

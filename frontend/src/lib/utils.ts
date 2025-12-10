@@ -1,4 +1,4 @@
-// src\lib\utils.ts
+// utils.ts
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -6,5 +6,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// API 기본 URL (환경 변수 또는 기본값)
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
+// API_BASE_URL은 api.ts에서 import하여 사용
+// 중복 정의 제거하고 re-export
+export { API_BASE_URL } from './api';
