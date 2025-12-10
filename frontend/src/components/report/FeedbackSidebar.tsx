@@ -3,7 +3,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import FeedbackSection from './FeedbackSection'
 import type { AnswerItem } from '../../types/report'
+import { API_BASE_URL } from '../../lib/utils'
 
+// ✅ 백엔드 analyze-overall 응답 타입
 type OverallFeedback = {
   strengths: string[]
   weaknesses: string[]
@@ -11,6 +13,7 @@ type OverallFeedback = {
 }
 
 interface FeedbackSidebarProps {
+  // Report 페이지에서 내려주는 전체 답변 리스트
   answers: AnswerItem[]
 }
 
@@ -19,7 +22,9 @@ export default function FeedbackSidebar({ answers }: FeedbackSidebarProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // answers 변경될 때마다 전체 피드백 재요청
   useEffect(() => {
+    // GPT에 보낼 수 있는 요약/점수가 없는 경우 방어
     const validItems = answers.filter(
       (a) => a.aiAnswerSummary && (a.aiScore != null || a.score != null)
     )
@@ -31,7 +36,8 @@ export default function FeedbackSidebar({ answers }: FeedbackSidebarProps) {
 
     const payload = {
       items: validItems.map((a) => ({
-        question_id: a.questionNumber,
+        // 백엔드에서 기대하는 필드 이름 맞추기
+        question_id: a.questionNumber, // 실제 question_id가 따로 있으면 그걸로 교체
         answer_summary: a.aiAnswerSummary as string,
         score: a.aiScore ?? a.score ?? null
       }))
@@ -40,12 +46,12 @@ export default function FeedbackSidebar({ answers }: FeedbackSidebarProps) {
     setLoading(true)
     setError(null)
 
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
-
+    // ⚠️ Vite proxy 기준: /api → FastAPI로 프록시된다고 가정
+    // 필요하면 여기 주소를 axios 인스턴스 등으로 교체해도 됨
     fetch(`${API_BASE_URL}/api/analyze-overall`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -66,6 +72,7 @@ export default function FeedbackSidebar({ answers }: FeedbackSidebarProps) {
       })
   }, [answers])
 
+  // 백엔드 응답 → FeedbackSection 에서 쓰는 포맷으로 변환
   const feedbacks = useMemo(() => {
     if (!overall) return []
 
@@ -104,6 +111,7 @@ export default function FeedbackSidebar({ answers }: FeedbackSidebarProps) {
         개선 포인트 🎯
       </h2>
 
+      {/* 상태 표시 */}
       {loading && (
         <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           전체 답변을 분석해서 강점/개선 포인트를 정리하는 중이에요...
@@ -120,6 +128,7 @@ export default function FeedbackSidebar({ answers }: FeedbackSidebarProps) {
         <FeedbackSection feedbacks={feedbacks} />
       )}
 
+      {/* 아직 분석 안됐거나, 응답이 비어 있는 경우 */}
       {!loading && !error && feedbacks.length === 0 && (
         <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           분석 가능한 요약/점수가 없어서 전체 피드백을 만들 수 없어요.

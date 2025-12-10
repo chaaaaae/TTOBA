@@ -6,6 +6,7 @@ import CameraView from '../components/interview/CameraView'
 import ChatPanel from '../components/interview/ChatPanel'
 import ControlBar from '../components/interview/ControlBar'
 import { ALL_QUESTIONS } from '../data/questionBank'
+import { API_BASE_URL } from '../lib/utils'
 
 // 🔊 STT 상태 타입
 type SttState = 'idle' | 'starting' | 'recording' | 'transcribing'
@@ -390,7 +391,7 @@ export default function Interview() {
         setVoiceText('')
         setSttState('starting')
 
-        const startRequest = fetch('http://localhost:8000/stt/start', {
+        const startRequest = fetch(`${API_BASE_URL}/stt/start`, {
           method: 'POST'
         })
         const delay = new Promise((resolve) => setTimeout(resolve, 1000))
@@ -405,7 +406,7 @@ export default function Interview() {
       } else if (sttState === 'recording') {
         setSttState('transcribing')
 
-        const res = await fetch('http://localhost:8000/stt/stop', {
+        const res = await fetch(`${API_BASE_URL}/stt/stop`, {
           method: 'POST'
         })
 

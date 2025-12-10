@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { AnswerItem } from '../types/report'
+import { API_BASE_URL } from '../lib/utils'
 
 export default function ReportLoading() {
   const { id } = useParams()
@@ -23,9 +24,6 @@ export default function ReportLoading() {
 
     const run = async () => {
       try {
-        const API_BASE_URL =
-          import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
-
         const res = await fetch(`${API_BASE_URL}/api/analyze-answer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
