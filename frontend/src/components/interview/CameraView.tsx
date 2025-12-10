@@ -34,11 +34,24 @@ export default function CameraView({
 
   const displayStats = stats || defaultStats
 
+  // 🔍 디버깅: 상태 변경 추적
+  useEffect(() => {
+    console.log('📹 CameraView 상태:', {
+      cameraEnabled,
+      isLoading,
+      hasError: !!error,
+      hasStream: !!stream,
+      videoRefExists: !!videoRef.current
+    })
+  }, [cameraEnabled, isLoading, error, stream])
+
   useEffect(() => {
     // 카메라와 마이크 접근
     const initMedia = async () => {
       try {
         setIsLoading(true)
+        console.log('📹 카메라 초기화 시작...')
+        
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1280 },
@@ -48,17 +61,21 @@ export default function CameraView({
           audio: true
         })
 
+        console.log('✅ 카메라 스트림 획득 성공')
         setStream(mediaStream)
         setError('')
 
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream
+          console.log('✅ 비디오 태그에 스트림 설정 완료')
+        } else {
+          console.warn('⚠️ videoRef.current가 없음')
         }
 
         // 🔥 스트림 준비되면 부모로 올려보내기
         onStreamReady?.(mediaStream)
       } catch (err) {
-        console.error('미디어 접근 오류:', err)
+        console.error('❌ 미디어 접근 오류:', err)
         onStreamReady?.(null)
 
         if (err instanceof Error) {
@@ -72,6 +89,7 @@ export default function CameraView({
         }
       } finally {
         setIsLoading(false)
+        console.log('📹 카메라 초기화 완료 (isLoading = false)')
       }
     }
 
@@ -81,6 +99,7 @@ export default function CameraView({
     return () => {
       if (stream) {
         stream.getTracks().forEach((track) => track.stop())
+        console.log('🛑 카메라 스트림 정리')
       }
       onStreamReady?.(null)
     }
@@ -99,6 +118,8 @@ export default function CameraView({
       audioTracks.forEach((track) => {
         track.enabled = micEnabled
       })
+
+      console.log('🎥 카메라 enabled:', cameraEnabled, '🎤 마이크 enabled:', micEnabled)
     }
   }, [stream, cameraEnabled, micEnabled])
 
@@ -197,8 +218,11 @@ export default function CameraView({
             position: 'absolute',
             top: 0,
             left: 0,
-            visibility: cameraEnabled ? 'visible' : 'hidden',
-            zIndex: 1
+            // ✅ 임시 디버깅: 항상 visible로 표시
+            visibility: 'visible',
+            // visibility: cameraEnabled ? 'visible' : 'hidden',
+            zIndex: 1,
+            background: 'black' // 디버깅용
           }}
         />
       )}
