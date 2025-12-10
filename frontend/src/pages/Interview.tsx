@@ -6,9 +6,9 @@ import CameraView from '../components/interview/CameraView'
 import ChatPanel from '../components/interview/ChatPanel'
 import ControlBar from '../components/interview/ControlBar'
 import { ALL_QUESTIONS } from '../data/questionBank'
-import { API_BASE_URL } from '../lib/api'
+import { API_BASE_URL } from '../lib/utils'
 
-// 🔊 STT 상태 타입
+// 📊 STT 상태 타입
 type SttState = 'idle' | 'starting' | 'recording' | 'transcribing'
 
 // QuestionBank에서 넘어오는 state 타입
@@ -102,9 +102,13 @@ export default function Interview() {
   const [voiceText, setVoiceText] = useState('')
   const [sttState, setSttState] = useState<SttState>('idle')
 
-  // ✅ 카메라 스트림 & MediaRecorder 관리
+  // ✅ 카메라 스트림 & MediaRecorder 관리 (비디오용)
   const streamRef = useRef<MediaStream | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+
+  // 🎤 STT용 오디오 MediaRecorder
+  const audioRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
 
   // CameraView에서 스트림 전달
   const handleStreamReady = (stream: MediaStream | null) => {
@@ -187,146 +191,90 @@ export default function Interview() {
     console.log(`▶️ Q${questionNumber} 녹화 시작`)
   }
 
-  // 🔥 현재 질문에 대한 녹화 종료
+  // 🛑 현재 진행 중인 질문의 녹화 종료
   const stopRecordingForCurrentQuestion = () => {
-    const recorder = mediaRecorderRef.current
-    if (recorder && recorder.state === 'recording') {
-      recorder.stop()
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop()
       console.log('⏹ 녹화 종료')
     }
   }
 
-  // Timer
+  // 🔥 매 초마다 elapsedTime 업데이트
   useEffect(() => {
-    if (isRecording) {
-      const interval = setInterval(() => {
-        setElapsedTime((prev) => prev + 1)
-      }, 1000)
-      return () => clearInterval(interval)
-    }
+    if (!isRecording) return
+
+    const timer = setInterval(() => {
+      setElapsedTime((prev) => prev + 1)
+    }, 1000)
+
+    return () => clearInterval(timer)
   }, [isRecording])
 
-  // ✅ 모든 질문 끝나면 자동으로 리포트 페이지로 이동
+  // 🔥 인터뷰 종료 감지 → 리포트로 이동
   useEffect(() => {
     if (isFinished) {
       const timer = setTimeout(() => {
+        stopRecordingForCurrentQuestion()
+
         navigate('/report/1/loading', {
           state: {
             answers: answersForReport
           }
         })
-      }, 2000) // "모든 질문이 종료되었습니다." 멘트 보여줄 시간
+      }, 2000)
 
       return () => clearTimeout(timer)
     }
-  }, [isFinished, navigate, answersForReport])
+  }, [isFinished, answersForReport, navigate])
 
-  // 🔥 사용자가 텍스트로 답변 보냈을 때
-  const handleSendMessage = (message: string) => {
-    // 1) 채팅에 사용자 메시지 추가
+  // 🔥 사용자가 메시지 전송하면
+  const handleSendMessage = (content: string) => {
+    if (!content.trim()) return
+
+    // 1) 사용자 메시지 추가
     setMessages((prev) => [
       ...prev,
-      {
-        type: 'user',
-        content: message,
-        timestamp: new Date()
-      }
+      { type: 'user', content, timestamp: new Date() }
     ])
 
-    // ✅ 항상 최신 질문 인덱스를 사용
-    const idx = currentQuestionRef.current
-
-    // 2) 현재 진행 중인 질문에 대한 "답변 기록" 저장
-    if (idx >= 0 && idx < questions.length) {
-      const q = questions[idx]
-
+    // 2) 현재 진행 중인 질문이 있다면, answer 업데이트
+    const currentIdx = currentQuestionRef.current
+    if (currentIdx >= 0) {
+      const questionNumber = currentIdx + 1
       setAnswersForReport((prev) => {
-        const questionNumber = idx + 1
         const existingIndex = prev.findIndex(
           (item) => item.questionNumber === questionNumber
         )
 
-        // 같은 질문에 여러 번 답하면 → 답변을 이어붙이기
         if (existingIndex >= 0) {
           const updated = [...prev]
-          const prevAnswer = updated[existingIndex].answer
           updated[existingIndex] = {
             ...updated[existingIndex],
-            answer: prevAnswer ? `${prevAnswer}\n${message}` : message
+            answer: content
           }
           return updated
         }
 
-        // 처음 답하는 질문이면 새로 추가
+        const q = questions[currentIdx]
         return [
           ...prev,
           {
             questionNumber,
-            question: q.text,
-            answer: message,
-            score: undefined,
-            duration: undefined,
-            durationSeconds: undefined
+            question: q?.text ?? '',
+            answer: content
           }
         ]
       })
+
+      // 🛑 답변 완료 → 녹화 중지
+      stopRecordingForCurrentQuestion()
     }
 
-    // 3) AI 응답 + 질문 진행 (+ 녹화 제어)
+    // 3) 다음 질문으로 넘어가기 (1.5초 후)
     setTimeout(() => {
       setCurrentQuestionIndex((prevIdx) => {
-        // ✅ 아직 질문 시작 전 (-1) → 첫 번째 질문 던지기
-        if (prevIdx < 0) {
-          if (questions.length === 0) {
-            const firstContent = '질문이 설정되지 않았습니다.'
-            setMessages((prev) => {
-              const last = prev[prev.length - 1]
-              if (last && last.type === 'ai' && last.content === firstContent) {
-                return prev
-              }
-              return [
-                ...prev,
-                {
-                  type: 'ai',
-                  content: firstContent,
-                  timestamp: new Date()
-                }
-              ]
-            })
-            return -1
-          }
-
-          const firstContent = `좋습니다. 첫 번째 질문입니다.\n${questions[0].text}`
-
-          setMessages((prev) => {
-            const last = prev[prev.length - 1]
-            if (last && last.type === 'ai' && last.content === firstContent) {
-              return prev
-            }
-            return [
-              ...prev,
-              {
-                type: 'ai',
-                content: firstContent,
-                timestamp: new Date()
-              }
-            ]
-          })
-
-          // 🔥 Q1 영상 녹화 시작
-          startRecordingForQuestion(1)
-
-          // 이제부터는 0번 인덱스 = Q1
-          return 0
-        }
-
-        // ✅ 이미 질문 진행 중 → 다음 질문 로직
-        const isLastQuestion = prevIdx >= questions.length - 1
-
-        // 🔥 현재 질문 녹화 종료
-        stopRecordingForCurrentQuestion()
-
-        const nextIdx = isLastQuestion ? prevIdx : prevIdx + 1
+        const nextIdx = prevIdx + 1
+        const isLastQuestion = nextIdx >= questions.length
 
         const nextContent = isLastQuestion
           ? '좋은 답변 잘 들었습니다. 모든 질문이 종료되었습니다.'
@@ -388,9 +336,11 @@ export default function Interview() {
   const handleVoiceClick = async () => {
     try {
       if (sttState === 'idle') {
+        // ===== 1단계: 녹음 시작 =====
         setVoiceText('')
         setSttState('starting')
 
+        // 백엔드에 녹음 시작 알림
         const startRequest = fetch(`${API_BASE_URL}/stt/start`, {
           method: 'POST'
         })
@@ -402,16 +352,71 @@ export default function Interview() {
           throw new Error('녹음 시작 실패')
         }
 
+        // ✅ 오디오 녹음 시작
+        const stream = streamRef.current
+        if (!stream) {
+          alert('마이크 스트림을 찾을 수 없습니다.')
+          setSttState('idle')
+          return
+        }
+
+        // 오디오 트랙만 사용 (비디오 제외)
+        const audioStream = new MediaStream(stream.getAudioTracks())
+        const audioRecorder = new MediaRecorder(audioStream, {
+          mimeType: 'audio/webm'
+        })
+
+        audioChunksRef.current = []
+
+        audioRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data)
+          }
+        }
+
+        audioRecorder.start()
+        audioRecorderRef.current = audioRecorder
+
+        console.log('🎤 오디오 녹음 시작')
         setSttState('recording')
+
       } else if (sttState === 'recording') {
+        // ===== 2단계: 녹음 종료 및 STT 요청 =====
         setSttState('transcribing')
 
+        // 오디오 녹음 중지
+        const audioRecorder = audioRecorderRef.current
+        if (!audioRecorder) {
+          throw new Error('오디오 레코더를 찾을 수 없습니다.')
+        }
+
+        // 녹음 중지 후 데이터 수집
+        audioRecorder.stop()
+
+        // ondataavailable이 완료될 때까지 대기
+        await new Promise<void>((resolve) => {
+          audioRecorder.onstop = () => {
+            console.log('🎤 오디오 녹음 종료')
+            resolve()
+          }
+        })
+
+        // 녹음된 오디오 Blob 생성
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        console.log('📦 오디오 Blob 크기:', audioBlob.size, 'bytes')
+
+        // FormData로 백엔드에 전송
+        const formData = new FormData()
+        formData.append('audio', audioBlob, 'recording.webm')
+
         const res = await fetch(`${API_BASE_URL}/stt/stop`, {
-          method: 'POST'
+          method: 'POST',
+          body: formData
         })
 
         if (!res.ok) {
-          throw new Error('녹음/인식 실패')
+          const errorText = await res.text()
+          throw new Error(`녹음/인식 실패: ${errorText}`)
         }
 
         const data = await res.json()
@@ -430,7 +435,7 @@ export default function Interview() {
         return
       }
     } catch (err) {
-      console.error(err)
+      console.error('STT 오류:', err)
       alert('음성 인식 중 오류가 발생했습니다.')
       setSttState('idle')
     }
